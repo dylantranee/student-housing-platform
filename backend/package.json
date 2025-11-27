@@ -1,0 +1,21 @@
+{
+	"name": "houplatform-be",
+	"version": "1.0.0",
+	"description": "Web application backend for finding rental houses and roommates.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/anlecute/houplatform-be.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "module",
+	"bugs": {
+		"url": "https://github.com/anlecute/houplatform-be/issues"
+	},
+	"homepage": "https://github.com/anlecute/houplatform-be#readme"
+}
