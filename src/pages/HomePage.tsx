@@ -7,7 +7,6 @@ export default function HomePage() {
     <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Header />
 
-      {/* UI only, no property data or API */}
     </Box>
   );
 }

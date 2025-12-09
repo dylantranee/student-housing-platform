@@ -94,10 +94,10 @@ export default function ProfilePage() {
 			});
 			setUser((prev: any) => ({ ...prev, ...res.data }));
 			setEditMode(false);
-			setSuccess('Cập nhật thành công!');
+			setSuccess('Successfully updated profile');
 			setOpenSnackbar(true);
 		} catch (err: any) {
-			setError('Cập nhật thất bại');
+			setError('Failed to update profile');
 			setOpenSnackbar(true);
 		}
 	};

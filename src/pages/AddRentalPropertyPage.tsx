@@ -1,102 +1,188 @@
-import React, { useState } from 'react';
-import { Box, Typography, TextField, Select, MenuItem, Button, InputLabel, FormControl, Chip, Checkbox, FormControlLabel, Switch } from '@mui/material';
-import Grid from '@mui/material/Grid';
-import LeafletMapSearch from '../components/common/LeafletMapSearch';
+import React, { useState, useEffect } from "react";
+import { getProfile } from '../service/user/getProfile.service';
+import { updateProfile } from '../service/user/updateProfile.service';
+import { createProperty } from '../service/properties/createProperty.service';
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  TextField,
+  Stack,
+  InputAdornment,
+  FormControl,
+} from "@mui/material";
 
-const propertyTypes = [
-  'Apartment', 'Townhouse', 'Room', 'Villa', 'Studio', 'Penthouse', 'Officetel', 'Ground Floor', 'Other'
-];
-const amenitiesList = [
-  'Wifi', 'Air conditioning', 'Parking', 'Security', 'Elevator', 'Swimming pool', 'Gym', 'Garden', 'Balcony', 'Fully furnished', 'Pet friendly'
-];
 
-export default function AddRentalPropertyPage() {
-  const [amenities, setAmenities] = useState<string[]>([]);
-  const [showContact, setShowContact] = useState<'public'|'hidden'|'system'>('public');
+const AddRentalPropertyPage: React.FC = () => {
+	       const initialFormState = {
+		       title: "",
+		       email: "",
+		       address: "",
+		       price: "",
+		       description: "",
+		       bedrooms: "",
+		       bathrooms: "",
+		       area: "",
+		       image: null as File | null,
+	       };
+	       const [form, setForm] = useState(initialFormState);
 
-  return (
-    
-    <Box sx={{ maxWidth: 900, mx: 'auto', p: 3 }}>
-      <Typography variant="h4" fontWeight={700} mb={3} color="primary">Post Rental Property</Typography>
-      <Grid container spacing={3}>
-        {/* 1️⃣ Basic Information */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Basic Information</Typography>
-          <TextField fullWidth label="Title" placeholder="2BR Apartment near center" sx={{ mb: 2 }} />
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Property Type</InputLabel>
-            <Select label="Property Type" defaultValue="">
-              {propertyTypes.map(type => <MenuItem key={type} value={type}>{type}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <TextField fullWidth label="Area (m²)" type="number" sx={{ mb: 2 }} />
-          <Grid container spacing={2}>
-            <Grid item xs={6}><TextField fullWidth label="Bedrooms" type="number" /></Grid>
-            <Grid item xs={6}><TextField fullWidth label="Bathrooms" type="number" /></Grid>
-          </Grid>
-        </Grid>
-        {/* 2️⃣ Address & Map */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Address</Typography>
-          <TextField fullWidth label="Street" placeholder="e.g. Nguyen Hue" sx={{ mb: 2 }} />
-          <TextField fullWidth label="Ward" placeholder="e.g. Ben Nghe" sx={{ mb: 2 }} />
-          <TextField fullWidth label="District" placeholder="e.g. District 1" sx={{ mb: 2 }} />
-          <TextField fullWidth label="City" placeholder="e.g. Ho Chi Minh City" sx={{ mb: 2 }} />
-          <TextField fullWidth label="Building (optional)" placeholder="Building name if any" sx={{ mb: 2 }} />
-        </Grid>
-        {/* 3️⃣ Rental Price */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Rental Price</Typography>
-          <TextField fullWidth label="Price" type="number" placeholder="VND" sx={{ mb: 2 }} />
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Unit</InputLabel>
-            <Select label="Unit" defaultValue="month">
-              <MenuItem value="month">Month</MenuItem>
-              <MenuItem value="week">Week</MenuItem>
-              <MenuItem value="year">Year</MenuItem>
-            </Select>
-          </FormControl>
-          <TextField fullWidth label="Deposit (if any)" type="number" sx={{ mb: 2 }} />
-        </Grid>
-        {/* 4️⃣ Description & Amenities */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Description & Amenities</Typography>
-          <TextField fullWidth label="Detailed Description" multiline minRows={3} sx={{ mb: 2 }} />
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Amenities</InputLabel>
-            <Select
-              label="Amenities"
-              multiple
-              value={amenities}
-              onChange={e => setAmenities(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value as string[])}
-              renderValue={selected => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {(selected as string[]).map(value => <Chip key={value} label={value} />)}
-                </Box>
-              )}
-            >
-              {amenitiesList.map(a => <MenuItem key={a} value={a}><Checkbox checked={amenities.indexOf(a) > -1} />{a}</MenuItem>)}
-            </Select>
-          </FormControl>
-        </Grid>
-        {/* 5️⃣ Images */}
-        <Grid item xs={12}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Images</Typography>
-          <Box sx={{ border: '1px dashed #ccc', p: 2, borderRadius: 2, textAlign: 'center', color: 'text.secondary', mb: 2 }}>
-            Drag & drop images here or select images (up to 10 images)
-          </Box>
-        </Grid>
-        {/* 6️⃣ Contact & Owner */}
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" fontWeight={600} mb={2}>Contact & Owner</Typography>
-          <TextField fullWidth label="Owner Name" sx={{ mb: 2 }} />
-          <TextField fullWidth label="Phone Number" sx={{ mb: 2 }} />
-          <TextField fullWidth label="Email" sx={{ mb: 2 }} />
-        </Grid>
-      </Grid>
-      <Box sx={{ textAlign: 'center', mt: 4 }}>
-        <Button variant="contained" color="primary" size="large">Post Rental Listing</Button>
-      </Box>
-    </Box>
-  );
-}
+	useEffect(() => {
+		async function fetchProfile() {
+			try {
+				const data = await getProfile();
+				console.log('Profile data:', data);
+				setForm((prev) => ({
+					...prev,
+					name: data.name || "",
+					email: data.email || "",
+				}));
+			} catch (err) {
+				console.error('Failed to fetch profile:', err);
+			}
+		}
+		fetchProfile();
+	}, []);
+
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+		const { name, value } = e.target;
+		setForm((prev) => ({ ...prev, [name]: value }));
+	};
+
+	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files && e.target.files[0]) {
+			setForm((prev) => ({ ...prev, image: e.target.files![0] }));
+		}
+	};
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		try {
+			const submitData = {
+				title: form.title,
+				location: form.address,
+				price: Number(form.price),
+				bedrooms: Number(form.bedrooms),
+				bathrooms: Number(form.bathrooms),
+				area: Number(form.area),
+				description: form.description,
+				images: form.image ? [form.image.name] : [],
+				email: form.email,
+			};
+			console.log('Submit data:', submitData);
+			   await createProperty(submitData);
+			   alert('Property added!');
+			   setForm(initialFormState); // Reset form về giá trị ban đầu
+		} catch (error) {
+			alert('Error adding property');
+		}
+	};
+
+	return (
+		<Container maxWidth="sm">
+			<Box sx={{ bgcolor: "background.paper", p: 4, borderRadius: 3, boxShadow: 3, mt: 6 }}>
+				<Typography variant="h4" fontWeight={700} mb={3} align="center">
+					Add Rental Property
+				</Typography>
+				<Box component="form" onSubmit={handleSubmit}>
+					<Stack spacing={3}>
+						<TextField
+							label="Title"
+							name="title"
+							value={form.title}
+							onChange={handleChange}
+							required
+							fullWidth
+						/>
+						<TextField
+							label="Address"
+							name="address"
+							value={form.address}
+							onChange={handleChange}
+							required
+							fullWidth
+						/>
+						<TextField
+							label="Rental Price (VND/month)"
+							name="price"
+							type="number"
+							value={form.price}
+							onChange={handleChange}
+							required
+							fullWidth
+							InputProps={{
+								endAdornment: <InputAdornment position="end">VND</InputAdornment>,
+							}}
+						/>
+						<TextField
+							label="Description"
+							name="description"
+							value={form.description}
+							onChange={handleChange}
+							multiline
+							rows={3}
+							fullWidth
+						/>
+						<TextField
+							label="Bedrooms"
+							name="bedrooms"
+							type="number"
+							value={form.bedrooms}
+							onChange={handleChange}
+							required
+							fullWidth
+						/>
+						<TextField
+							label="Bathrooms"
+							name="bathrooms"
+							type="number"
+							value={form.bathrooms}
+							onChange={handleChange}
+							required
+							fullWidth
+						/>
+						<TextField
+							label="Area (m²)"
+							name="area"
+							type="number"
+							value={form.area}
+							onChange={handleChange}
+							required
+							fullWidth
+							InputProps={{
+								endAdornment: <InputAdornment position="end">m²</InputAdornment>,
+							}}
+						/>
+						<FormControl fullWidth>
+							<Button
+								variant="outlined"
+								component="label"
+								sx={{ textTransform: "none" }}
+							>
+								{form.image ? form.image.name : "Choose Image"}
+								<input
+									type="file"
+									accept="image/*"
+									hidden
+									onChange={handleImageChange}
+								/>
+							</Button>
+						</FormControl>
+						<Button
+							type="submit"
+							variant="contained"
+							size="large"
+							sx={{ fontWeight: 600, borderRadius: 2 }}
+							fullWidth
+						>
+							Add Property
+						</Button>
+					</Stack>
+				</Box>
+			</Box>
+		</Container>
+	);
+};
+
+export default AddRentalPropertyPage;
