@@ -5,7 +5,6 @@ exports.updateProfile = async (req, res) => {
     return res.status(400).json({ error: "No fields to update" });
   }
   try {
-    // Chỉ cho phép cập nhật name, age, phone
     const update = {};
     if (name) update.name = name;
     if (age) update.age = age;

@@ -20,7 +20,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173", // Vite dev server
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
@@ -35,12 +35,16 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-
 // Routes
-const propertyRoutes = require("./routes/properties");
 const authRoutes = require("./routes/auth");
-app.use("/api/properties", propertyRoutes);
+const houseDetailRoutes = require("./routes/houseDetail");
 app.use("/api/auth", authRoutes);
+app.use("/api/houseDetail", houseDetailRoutes);
+
+// Serve uploaded images statically
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
