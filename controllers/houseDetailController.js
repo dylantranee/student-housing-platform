@@ -68,3 +68,13 @@ exports.updateHouseDetail = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// Get all house details
+exports.getAllHouseDetails = async (req, res) => {
+  try {
+    const houses = await HouseDetail.find();
+    res.json(houses);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
