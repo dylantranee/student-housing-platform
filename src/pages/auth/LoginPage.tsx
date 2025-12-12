@@ -10,17 +10,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess(false);
     try {
       const res = await UserLoginService.loginByEmailAndPassword({ email, password });
       document.cookie = `access_token=${res.data.accessToken}; path=/`;
-      setSuccess(true);
       setOpenSnackbar(true);
       setTimeout(() => {
         window.location.href = '/';
@@ -60,6 +58,21 @@ export default function LoginPage() {
           <Button type="submit" variant="contained" color="primary" size="large" sx={{ mt: 1, fontWeight: 600, py: 1.5, boxShadow: 2, borderRadius: 2, ':hover': { backgroundColor: 'primary.dark' } }}>
             Login
           </Button>
+          <Typography variant="body2" sx={{ textAlign: 'center', mt: 1, color: 'text.secondary' }}>
+            Not got an account?{' '}
+            <Box 
+                component="span" 
+                sx={{ 
+                    fontWeight: 600, 
+                    color: 'text.primary', 
+                    cursor: 'pointer', 
+                    textDecoration: 'underline' 
+                }} 
+                onClick={() => window.location.href = '/register'}
+            >
+                Create an account
+            </Box>
+          </Typography>
           <Snackbar open={openSnackbar} autoHideDuration={2500} onClose={() => setOpenSnackbar(false)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
             <Alert
               severity={error ? 'error' : 'success'}

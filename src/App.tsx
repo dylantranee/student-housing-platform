@@ -5,8 +5,8 @@ import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import ComparePricesPage from './pages/ComparePricesPage';
 import AddRentalPropertyPage from './pages/AddRentalPropertyPage';
-import LoginPage from './screen/auth/LoginPage';
-import RegisterPage from './screen/auth/RegisterPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import PrivateRoute from './components/auth/PrivateRoute';
 
 

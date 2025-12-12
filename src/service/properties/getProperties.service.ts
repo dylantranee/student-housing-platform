@@ -1,10 +1,25 @@
-import { request } from '../../util/request';
+import axios from "axios";
 
-export const getProperties = async () => {
-  const response = await request({
-    method: 'GET',
-    url: 'http://localhost:3000/api/houseDetail',
-  });
-  if (!response.ok) throw new Error('Failed to fetch properties');
-  return response.json();
+const API_URL = "http://localhost:8080/api/houseDetail";
+
+export interface Property {
+  _id: string;
+  title: string;
+  location: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  description: string;
+  images: string[];
+}
+
+export const getProperties = async (): Promise<Property[]> => {
+  try {
+    const response = await axios.get(API_URL);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching properties:", error);
+    throw error;
+  }
 };

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { getProfile } from '../service/user/getProfile.service';
-import { updateProfile } from '../service/user/updateProfile.service';
 import { createProperty } from '../service/properties/createProperty.service';
 import {
   Box,
