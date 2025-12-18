@@ -15,6 +15,8 @@ exports.addHouseDetail = async (req, res) => {
     const bathrooms = req.body.bathrooms;
     const area = req.body.area;
     const description = req.body.description;
+    const lat = req.body.lat;
+    const lng = req.body.lng;
 
     let images = [];
     if (req.files && req.files.length > 0) {
@@ -34,7 +36,9 @@ exports.addHouseDetail = async (req, res) => {
       bathrooms,
       area,
       description,
-      images
+      images,
+      lat,
+      lng
     });
     await house.save();
     res.status(201).json(house);

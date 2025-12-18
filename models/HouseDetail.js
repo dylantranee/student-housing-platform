@@ -9,6 +9,8 @@ const HouseDetailSchema = new mongoose.Schema({
 	area: { type: Number, required: true },
 	description: { type: String },
 	images: [{ type: String }],
+	lat: { type: Number },
+	lng: { type: Number },
 }, { timestamps: true });
 
 module.exports = mongoose.model('HouseDetail', HouseDetailSchema);
