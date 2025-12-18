@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getProfile } from '../service/user/getProfile.service';
 import { createProperty } from '../service/properties/createProperty.service';
+import LeafletMapSearch from '../components/common/LeafletMapSearch';
 import {
   Box,
   Button,
@@ -11,6 +12,7 @@ import {
   InputAdornment,
   FormControl,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 
 
 const AddRentalPropertyPage: React.FC = () => {
@@ -24,6 +26,8 @@ const AddRentalPropertyPage: React.FC = () => {
 		       bathrooms: "",
 		       area: "",
 		       image: null as File | null,
+		       lat: 0,
+		       lng: 0,
 	       };
 	       const [form, setForm] = useState(initialFormState);
 
@@ -68,8 +72,11 @@ const AddRentalPropertyPage: React.FC = () => {
 				description: form.description,
 				images: form.image ? [form.image.name] : [],
 				email: form.email,
+				lat: form.lat,
+				lng: form.lng,
 			};
 			console.log('Submit data:', submitData);
+			console.log('Lat/Lng values:', { lat: form.lat, lng: form.lng });
 			   await createProperty(submitData);
 			   alert('Property added!');
 			   setForm(initialFormState); // Reset form về giá trị ban đầu
@@ -79,108 +86,294 @@ const AddRentalPropertyPage: React.FC = () => {
 	};
 
 	return (
-		<Container maxWidth="sm">
-			<Box sx={{ bgcolor: "background.paper", p: 4, borderRadius: 3, boxShadow: 3, mt: 6 }}>
-				<Typography variant="h4" fontWeight={700} mb={3} align="center">
-					Add Rental Property
-				</Typography>
-				<Box component="form" onSubmit={handleSubmit}>
-					<Stack spacing={3}>
-						<TextField
-							label="Title"
-							name="title"
-							value={form.title}
-							onChange={handleChange}
-							required
-							fullWidth
-						/>
-						<TextField
-							label="Address"
-							name="address"
-							value={form.address}
-							onChange={handleChange}
-							required
-							fullWidth
-						/>
-						<TextField
-							label="Rental Price (VND/month)"
-							name="price"
-							type="number"
-							value={form.price}
-							onChange={handleChange}
-							required
-							fullWidth
-							InputProps={{
-								endAdornment: <InputAdornment position="end">VND</InputAdornment>,
-							}}
-						/>
-						<TextField
-							label="Description"
-							name="description"
-							value={form.description}
-							onChange={handleChange}
-							multiline
-							rows={3}
-							fullWidth
-						/>
-						<TextField
-							label="Bedrooms"
-							name="bedrooms"
-							type="number"
-							value={form.bedrooms}
-							onChange={handleChange}
-							required
-							fullWidth
-						/>
-						<TextField
-							label="Bathrooms"
-							name="bathrooms"
-							type="number"
-							value={form.bathrooms}
-							onChange={handleChange}
-							required
-							fullWidth
-						/>
-						<TextField
-							label="Area (m²)"
-							name="area"
-							type="number"
-							value={form.area}
-							onChange={handleChange}
-							required
-							fullWidth
-							InputProps={{
-								endAdornment: <InputAdornment position="end">m²</InputAdornment>,
-							}}
-						/>
-						<FormControl fullWidth>
-							<Button
-								variant="outlined"
-								component="label"
-								sx={{ textTransform: "none" }}
+		<Box sx={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
+			<Container maxWidth="lg" sx={{ pt: { xs: 6, md: 10 }, pb: 10 }}>
+				<Box sx={{ maxWidth: 900, mx: 'auto', mb: 4, textAlign: 'center' }}>
+					<Typography 
+						variant="h2" 
+						component="h1" 
+						sx={{ 
+							fontFamily: 'var(--font-serif)', 
+							fontWeight: 700, 
+							mb: 2, 
+							color: '#000', 
+							fontSize: { xs: '2rem', md: '2.75rem' } 
+						}}
+					>
+						List Your Property
+					</Typography>
+					<Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400, fontSize: '1.1rem' }}>
+						Share your space with students looking for their perfect home
+					</Typography>
+				</Box>
+
+				<Box 
+					sx={{ 
+						bgcolor: 'white', 
+						p: { xs: 3, md: 5 }, 
+						borderRadius: 3, 
+						boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+						border: '1px solid #e0e0e0'
+					}}
+				>
+					<Box component="form" onSubmit={handleSubmit}>
+						<Stack spacing={4}>
+							{/* Basic Information Section */}
+							<Box>
+								<Typography 
+									variant="h6" 
+									sx={{ 
+										fontWeight: 700, 
+										mb: 3, 
+										color: '#000',
+										fontSize: '1.25rem',
+										letterSpacing: 0.5
+									}}
+								>
+									BASIC INFORMATION
+								</Typography>
+								<Stack spacing={3}>
+									<TextField
+										label="Property Title"
+										name="title"
+										value={form.title}
+										onChange={handleChange}
+										required
+										fullWidth
+										placeholder="e.g., Cozy Studio Near University"
+										sx={{
+											'& .MuiOutlinedInput-root': {
+												borderRadius: 2,
+												'&:hover fieldset': { borderColor: '#FF5A5F' },
+												'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+											}
+										}}
+									/>
+									<TextField
+										label="Address"
+										name="address"
+										value={form.address}
+										onChange={handleChange}
+										required
+										fullWidth
+										placeholder="e.g., 123 Main Street, District 1"
+										sx={{
+											'& .MuiOutlinedInput-root': {
+												borderRadius: 2,
+												'&:hover fieldset': { borderColor: '#FF5A5F' },
+												'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+											}
+										}}
+									/>
+									<TextField
+										label="Description"
+										name="description"
+										value={form.description}
+										onChange={handleChange}
+										multiline
+										rows={4}
+										fullWidth
+										placeholder="Describe your property, amenities, nearby facilities..."
+										sx={{
+											'& .MuiOutlinedInput-root': {
+												borderRadius: 2,
+												'&:hover fieldset': { borderColor: '#FF5A5F' },
+												'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+											}
+										}}
+									/>
+								</Stack>
+							</Box>
+
+							{/* Property Details Section */}
+							<Box>
+								<Typography 
+									variant="h6" 
+									sx={{ 
+										fontWeight: 700, 
+										mb: 3, 
+										color: '#000',
+										fontSize: '1.25rem',
+										letterSpacing: 0.5
+									}}
+								>
+									PROPERTY DETAILS
+								</Typography>
+								<Grid container spacing={3}>
+									<Grid size={{ xs: 12, sm: 6 }}>
+										<TextField
+											label="Rental Price (VND/month)"
+											name="price"
+											type="number"
+											value={form.price}
+											onChange={handleChange}
+											required
+											fullWidth
+											placeholder="e.g., 5000000"
+											InputProps={{
+												endAdornment: <InputAdornment position="end">VND</InputAdornment>,
+											}}
+											sx={{
+												'& .MuiOutlinedInput-root': {
+													borderRadius: 2,
+													'&:hover fieldset': { borderColor: '#FF5A5F' },
+													'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+												}
+											}}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6 }}>
+										<TextField
+											label="Area (m²)"
+											name="area"
+											type="number"
+											value={form.area}
+											onChange={handleChange}
+											required
+											fullWidth
+											placeholder="e.g., 30"
+											InputProps={{
+												endAdornment: <InputAdornment position="end">m²</InputAdornment>,
+											}}
+											sx={{
+												'& .MuiOutlinedInput-root': {
+													borderRadius: 2,
+													'&:hover fieldset': { borderColor: '#FF5A5F' },
+													'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+												}
+											}}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6 }}>
+										<TextField
+											label="Bedrooms"
+											name="bedrooms"
+											type="number"
+											value={form.bedrooms}
+											onChange={handleChange}
+											required
+											fullWidth
+											placeholder="e.g., 1"
+											sx={{
+												'& .MuiOutlinedInput-root': {
+													borderRadius: 2,
+													'&:hover fieldset': { borderColor: '#FF5A5F' },
+													'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+												}
+											}}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 6 }}>
+										<TextField
+											label="Bathrooms"
+											name="bathrooms"
+											type="number"
+											value={form.bathrooms}
+											onChange={handleChange}
+											required
+											fullWidth
+											placeholder="e.g., 1"
+											sx={{
+												'& .MuiOutlinedInput-root': {
+													borderRadius: 2,
+													'&:hover fieldset': { borderColor: '#FF5A5F' },
+													'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+												}
+											}}
+										/>
+									</Grid>
+								</Grid>
+							</Box>
+						{/* Images Section */}
+						<Box>
+							<Typography 
+								variant="h6" 
+								sx={{ 
+									fontWeight: 700, 
+									mb: 3, 
+									color: '#000',
+									fontSize: '1.25rem',
+									letterSpacing: 0.5
+								}}
 							>
-								{form.image ? form.image.name : "Choose Image"}
-								<input
-									type="file"
-									accept="image/*"
-									hidden
-									onChange={handleImageChange}
-								/>
-							</Button>
-						</FormControl>
+								IMAGES
+							</Typography>
+							<FormControl fullWidth>
+								<Button
+									variant="outlined"
+									component="label"
+									sx={{ 
+										textTransform: "none",
+										borderRadius: 2,
+										py: 2,
+										borderColor: '#e0e0e0',
+										color: '#000',
+										fontSize: '1rem',
+										'&:hover': {
+											borderColor: '#FF5A5F',
+											bgcolor: '#fff5f5'
+										}
+									}}
+								>
+									{form.image ? form.image.name : "Choose Property Image"}
+									<input
+										type="file"
+										accept="image/*"
+										hidden
+										onChange={handleImageChange}
+									/>
+								</Button>
+							</FormControl>
+						</Box>
+
+						{/* Location Section */}
+						<Box>
+							<Typography 
+								variant="h6" 
+								sx={{ 
+									fontWeight: 700, 
+									mb: 3, 
+									color: '#000',
+									fontSize: '1.25rem',
+									letterSpacing: 0.5
+								}}
+							>
+								LOCATION
+							</Typography>
+							<LeafletMapSearch 
+								onLocationChange={(lat, lng, address) => {
+									setForm(prev => ({ ...prev, lat, lng, address }));
+								}} 
+							/>
+						</Box>
+
+						{/* Submit Button */}
 						<Button
 							type="submit"
 							variant="contained"
 							size="large"
-							sx={{ fontWeight: 600, borderRadius: 2 }}
+							sx={{ 
+								fontWeight: 700, 
+								borderRadius: 50,
+								py: 2,
+								fontSize: '1.1rem',
+								bgcolor: '#FF5A5F',
+								textTransform: 'none',
+								boxShadow: 'none',
+								'&:hover': { 
+									bgcolor: '#FF385C',
+									boxShadow: 'none'
+								}
+							}}
 							fullWidth
 						>
-							Add Property
+							Publish Property
 						</Button>
 					</Stack>
 				</Box>
 			</Box>
 		</Container>
+		</Box>
 	);
 };
 

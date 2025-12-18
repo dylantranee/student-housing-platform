@@ -12,6 +12,8 @@ export interface Property {
   area: number;
   description: string;
   images: string[];
+  lat?: number;
+  lng?: number;
 }
 
 export const getProperties = async (): Promise<Property[]> => {
