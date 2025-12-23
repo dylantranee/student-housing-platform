@@ -1,18 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Container, Grid, Typography, CircularProgress } from '@mui/material';
+import { Box, Container, Grid, Typography, CircularProgress } from '@mui/material';
 import Header from '../components/layout/Header';
 import { getProperties } from '../service/properties/getProperties.service';
 import type { Property } from '../service/properties/getProperties.service';
 import PropertyCard from '../components/common/PropertyCard';
+import SearchSection from '../components/common/SearchSection';
+import { COLORS } from '../theme/theme';
 
 export default function HomePage() {
+  // Data gốc từ API - KHÔNG BAO GIỜ thay đổi sau khi fetch
+  const [allProperties, setAllProperties] = useState<Property[]>([]);
+  
+  // Data hiển thị - sẽ thay đổi khi search/filter
   const [properties, setProperties] = useState<Property[]>([]);
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProperties = async () => {
       try {
         const data = await getProperties();
+        // Lưu vào cả 2: allProperties (gốc) và properties (hiển thị ban đầu)
+        setAllProperties(data);
         setProperties(data);
       } catch (error) {
         console.error("Failed to load properties", error);
@@ -22,6 +31,37 @@ export default function HomePage() {
     };
     fetchProperties();
   }, []);
+
+  // Hàm xử lý search nhận từ SearchSection component
+  const handleSearch = (
+    location: string, 
+    propertyType: string, 
+    priceRange: { min: number; max: number }
+  ) => {
+    let filtered = [...allProperties];
+
+    // Filter by location (case-insensitive, partial match)
+    if (location.trim()) {
+      filtered = filtered.filter(p => 
+        p.location.toLowerCase().includes(location.toLowerCase())
+      );
+    }
+
+    // Filter by property type (giả sử có trong title hoặc description)
+    if (propertyType.trim()) {
+      filtered = filtered.filter(p => 
+        p.title.toLowerCase().includes(propertyType.toLowerCase()) ||
+        p.description.toLowerCase().includes(propertyType.toLowerCase())
+      );
+    }
+
+    // Filter by price range
+    filtered = filtered.filter(p => 
+      p.price >= priceRange.min && p.price <= priceRange.max
+    );
+
+    setProperties(filtered);
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
@@ -37,56 +77,14 @@ export default function HomePage() {
             </Typography>
         </Box>
 
-        {/* Search Bar */}
-        <Box 
-            sx={{ 
-                display: 'inline-flex', 
-                bgcolor: 'white', 
-                boxShadow: '0 6px 16px rgba(0,0,0,0.08)', 
-                borderRadius: 50, 
-                p: 1, 
-                alignItems: 'center',
-                border: '1px solid #e0e0e0',
-                maxWidth: '100%',
-                flexWrap: 'wrap',
-                justifyContent: 'center'
-            }}
-        >
-            <Box sx={{ px: 4, py: 1.5, borderRight: { sm: '1px solid #eee' }, cursor: 'pointer', textAlign: 'left' }}>
-                <Typography variant="caption" display="block" fontWeight={700} sx={{ letterSpacing: 0.5, color: '#000' }}>LOCATION</Typography>
-                <Typography variant="body2" color="text.secondary">Select district</Typography>
-            </Box>
-            <Box sx={{ px: 4, py: 1.5, borderRight: { sm: '1px solid #eee' }, cursor: 'pointer', textAlign: 'left' }}>
-                <Typography variant="caption" display="block" fontWeight={700} sx={{ letterSpacing: 0.5, color: '#000' }}>PROPERTY TYPE</Typography>
-                <Typography variant="body2" color="text.secondary">Apartment, Studio...</Typography>
-            </Box>
-             <Box sx={{ px: 4, py: 1.5, cursor: 'pointer', mr: 2, textAlign: 'left' }}>
-                <Typography variant="caption" display="block" fontWeight={700} sx={{ letterSpacing: 0.5, color: '#000' }}>PRICE RANGE</Typography>
-                <Typography variant="body2" color="text.secondary">Set budget</Typography>
-            </Box>
-            <Button 
-                variant="contained" 
-                sx={{ 
-                    bgcolor: '#FF5A5F', 
-                    borderRadius: 50, 
-                    px: 4, 
-                    py: 1.5,
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                    boxShadow: 'none',
-                    '&:hover': { bgcolor: '#FF385C', boxShadow: 'none' }
-                }}
-            >
-                Search
-            </Button>
-        </Box>
+        {/* Search Component */}
+        <SearchSection onSearch={handleSearch} />
       </Container>
 
        <Container maxWidth="xl" sx={{ pb: 12, px: { xs: 2, md: 4 } }}>
         {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-                <CircularProgress sx={{ color: '#FF5A5F' }} />
+                <CircularProgress sx={{ color: COLORS.primary }} />
             </Box>
         ) : (
             <Grid container spacing={4} sx={{ width: '100%' }}>

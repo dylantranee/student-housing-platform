@@ -8,11 +8,16 @@ import AddRentalPropertyPage from './pages/AddRentalPropertyPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import PrivateRoute from './components/auth/PrivateRoute';
+import PropertyDetailPage from './pages/PropertyDetailPage';
+import { BrowseRoommatesPage } from './pages/BrowseRoommatesPage';
+import MyRequestsPage from './pages/MyRequestsPage';
+import ScrollToTop from './components/common/ScrollToTop';
 
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -22,8 +27,19 @@ function App() {
             <ProfilePage />
           </PrivateRoute>
         } />
+        <Route path="/requests" element={
+          <PrivateRoute>
+            <MyRequestsPage />
+          </PrivateRoute>
+        } />
+        <Route path="/roommates/browse" element={
+          <PrivateRoute>
+            <BrowseRoommatesPage />
+          </PrivateRoute>
+        } />
         <Route path="/compare-prices" element={<ComparePricesPage />} />
         <Route path="/add-rental-property" element={<AddRentalPropertyPage />} />
+        <Route path="/property/:id" element={<PropertyDetailPage />} />
       </Routes>
     </BrowserRouter>
   );

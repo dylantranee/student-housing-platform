@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { getProfile } from '../service/user/getProfile.service';
 import { createProperty } from '../service/properties/createProperty.service';
-import LeafletMapSearch from '../components/common/LeafletMapSearch';
+import LeafletMap from '../components/common/LeafletMap';
+import Header from '../components/layout/Header';
 import {
   Box,
   Button,
@@ -13,6 +14,7 @@ import {
   FormControl,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
+import { COLORS } from '../theme/theme';
 
 
 const AddRentalPropertyPage: React.FC = () => {
@@ -30,6 +32,8 @@ const AddRentalPropertyPage: React.FC = () => {
 		       lng: 0,
 	       };
 	       const [form, setForm] = useState(initialFormState);
+	       const [position, setPosition] = useState<[number, number]>([10.762622, 106.660172]);
+	       const [address, setAddress] = useState<string>("");
 
 	useEffect(() => {
 		async function fetchProfile() {
@@ -86,6 +90,8 @@ const AddRentalPropertyPage: React.FC = () => {
 	};
 
 	return (
+		<>
+		<Header />
 		<Box sx={{ minHeight: '100vh', backgroundColor: '#f9f9f9' }}>
 			<Container maxWidth="lg" sx={{ pt: { xs: 6, md: 10 }, pb: 10 }}>
 				<Box sx={{ maxWidth: 900, mx: 'auto', mb: 4, textAlign: 'center' }}>
@@ -177,8 +183,8 @@ const AddRentalPropertyPage: React.FC = () => {
 										sx={{
 											'& .MuiOutlinedInput-root': {
 												borderRadius: 2,
-												'&:hover fieldset': { borderColor: '#FF5A5F' },
-												'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+											'&:hover fieldset': { borderColor: COLORS.primary },
+											'&.Mui-focused fieldset': { borderColor: COLORS.primary }
 											}
 										}}
 									/>
@@ -216,8 +222,8 @@ const AddRentalPropertyPage: React.FC = () => {
 											sx={{
 												'& .MuiOutlinedInput-root': {
 													borderRadius: 2,
-													'&:hover fieldset': { borderColor: '#FF5A5F' },
-													'&.Mui-focused fieldset': { borderColor: '#FF5A5F' }
+														'&:hover fieldset': { borderColor: COLORS.primary },
+														'&.Mui-focused fieldset': { borderColor: COLORS.primary }
 												}
 											}}
 										/>
@@ -310,7 +316,7 @@ const AddRentalPropertyPage: React.FC = () => {
 										color: '#000',
 										fontSize: '1rem',
 										'&:hover': {
-											borderColor: '#FF5A5F',
+										borderColor: COLORS.primary,
 											bgcolor: '#fff5f5'
 										}
 									}}
@@ -340,10 +346,16 @@ const AddRentalPropertyPage: React.FC = () => {
 							>
 								LOCATION
 							</Typography>
-							<LeafletMapSearch 
-								onLocationChange={(lat, lng, address) => {
-									setForm(prev => ({ ...prev, lat, lng, address }));
-								}} 
+							<LeafletMap 
+								position={position}
+								setPosition={setPosition}
+								setAddress={setAddress}
+								radiusKm={0}
+								properties={[]}
+								onLocationChange={(lat, lng, addr) => {
+									setForm(prev => ({ ...prev, lat, lng, address: addr }));
+								}}
+								usePropertyLocationIcon
 							/>
 						</Box>
 
@@ -357,11 +369,11 @@ const AddRentalPropertyPage: React.FC = () => {
 								borderRadius: 50,
 								py: 2,
 								fontSize: '1.1rem',
-								bgcolor: '#FF5A5F',
+								bgcolor: COLORS.primary,
 								textTransform: 'none',
 								boxShadow: 'none',
 								'&:hover': { 
-									bgcolor: '#FF385C',
+									bgcolor: COLORS.primaryHover,
 									boxShadow: 'none'
 								}
 							}}
@@ -374,6 +386,7 @@ const AddRentalPropertyPage: React.FC = () => {
 			</Box>
 		</Container>
 		</Box>
+		</>
 	);
 };
 

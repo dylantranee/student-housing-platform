@@ -2,6 +2,7 @@ import { Card, CardContent, CardMedia, Typography, Box, IconButton } from '@mui/
 import { FavoriteBorder } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { UPLOADS_BASE_URL } from '../../config/apiConfig';
 import type { Property } from '../../service/properties/getProperties.service';
 
 
@@ -26,12 +27,12 @@ const BathroomIcon = () => (
 );
 
 const FALLBACK_IMAGES = [
+    'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80',
     'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1600596542815-2a4d04774c13?auto=format&fit=crop&w=800&q=80',
     'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1600566753086-00f18cf6b343?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80'
+    'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1448630360428-654238892ca4?auto=format&fit=crop&w=800&q=80'
 ];
 
 const FALLBACK_DESCRIPTIONS = [
@@ -73,8 +74,6 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     const getInitialImage = () => {
         if (!property.images || property.images.length === 0) return fallbackImage;
         const firstImage = property.images[0];
-        // If it's an object with filename (legacy/upload middleware format), use .filename
-        // If it's a string (Unsplash URL or filename string), use it directly
         const imagePath = typeof firstImage === 'object' && (firstImage as any).filename 
             ? (firstImage as any).filename 
             : firstImage;
@@ -82,7 +81,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         if (imagePath.startsWith('http')) {
             return imagePath;
         }
-        return `http://127.0.0.1:8080/uploads/${imagePath}`;
+        return `${UPLOADS_BASE_URL}/${imagePath}`;
     };
 
     const [imgSrc, setImgSrc] = useState(getInitialImage());

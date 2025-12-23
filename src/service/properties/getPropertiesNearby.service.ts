@@ -1,8 +1,9 @@
 import axios from "axios";
 import type { Property } from "./getProperties.service";
 import { filterPropertiesInRadius } from "../../util/calculateArea";
+import { API_BASE_URL } from "../../config/apiConfig";
 
-const API_URL = "http://localhost:3000/api/houseDetail";
+const API_URL = `${API_BASE_URL}/houseDetail`;
 
 export interface NearbyPropertiesParams {
   lat: number;

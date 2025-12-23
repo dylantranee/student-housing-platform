@@ -1,16 +1,25 @@
 import { createTheme } from '@mui/material/styles';
 
+// Project Color Palette
+export const COLORS = {
+  primary: '#FF5A5F',      // Coral Red - Primary brand color
+  primaryHover: '#FF385C', // Darker coral for hover states
+  secondary: '#FF93B3',    // Pink - Secondary accent
+  neutral: '#DEDEDE',      // Light Gray - Borders, backgrounds
+  gradient: 'linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%)', // Background gradient
+} as const;
+
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#2e7d32',
-      light: '#4caf50',
-      dark: '#1b5e20',
+      main: COLORS.primary,
+      light: COLORS.secondary,
+      dark: COLORS.primaryHover,
     },
     secondary: {
-      main: '#ff6f00',
-      light: '#ff9800',
-      dark: '#e65100',
+      main: COLORS.secondary,
+      light: '#FFB8D2',
+      dark: '#FF6E9F',
     },
     background: {
       default: '#f5f5f5',
