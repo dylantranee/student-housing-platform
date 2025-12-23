@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     Box, 
@@ -69,7 +69,6 @@ export default function PropertyDetailPage() {
     const [showRoommateModal, setShowRoommateModal] = useState(false);
     const [showContactModal, setShowContactModal] = useState(false);
     const [position, setPosition] = useState<[number, number]>([10.762622, 106.660172]);
-    const [address, setAddress] = useState<string>("");
 
     useEffect(() => {
         if (!id) return;
@@ -260,7 +259,7 @@ export default function PropertyDetailPage() {
                                     <LeafletMap
                                         position={position}
                                         setPosition={setPosition}
-                                        setAddress={setAddress}
+                                        setAddress={() => {}}
                                         radiusKm={0}
                                         properties={[]}
                                         readOnly

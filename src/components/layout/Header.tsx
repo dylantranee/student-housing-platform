@@ -374,11 +374,11 @@ export default function Header() {
           variant="filled" 
           sx={{ 
             width: '100%',
-            bgcolor: '#C9EAFF',
-            color: '#000000',
+            bgcolor: '#96FFC0',
+            color: '#222',
             fontWeight: 600,
             '& .MuiAlert-icon': {
-              color: '#000000'
+              color: '#222'
             }
           }}
         >

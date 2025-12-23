@@ -269,10 +269,10 @@ export default function LoginPage() {
               width: '100%',
               borderRadius: 2,
               fontWeight: 600,
-              bgcolor: '#C9EAFF',
-              color: '#000000',
+              bgcolor: '#96FFC0',
+              color: '#222',
               '& .MuiAlert-icon': {
-                color: '#000000'
+                color: '#222'
               }
             }}
             onClose={() => setOpenSnackbar(false)}
