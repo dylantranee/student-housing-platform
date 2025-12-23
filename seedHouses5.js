@@ -18,7 +18,7 @@ const houses = [
     bathrooms: 2,
     area: 165,
     description: "Nhà vườn yên tĩnh, không gian xanh mát",
-    images: [],
+    images: ['house1.png', 'house2.png', 'house3.png'],
     lat: 10.680934960382977,
     lng: 106.82974505005544
   },
@@ -30,7 +30,7 @@ const houses = [
     bathrooms: 2,
     area: 84,
     description: "Căn hộ mới, khu vực đang phát triển mạnh",
-    images: [],
+    images: ['house2.png'],
     lat: 10.80114723114362,
     lng: 106.85634954510923
   },
@@ -42,7 +42,7 @@ const houses = [
     bathrooms: 1,
     area: 380,
     description: "Đất nông nghiệp, giá rẻ, đất màu mỡ",
-    images: [],
+    images: ['house3.png'],
     lat: 10.719199269918148,
     lng: 106.52253110703026
   },

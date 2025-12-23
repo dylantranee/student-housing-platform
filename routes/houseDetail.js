@@ -14,4 +14,7 @@ router.put('/:id', upload.single('image'), updateHouseDetail);
 // Get all properties
 router.get('/', getAllHouseDetails);
 
+// Get property by ID
+router.get('/:id', require('../controllers/houseDetailController').getHouseDetailById);
+
 module.exports = router;

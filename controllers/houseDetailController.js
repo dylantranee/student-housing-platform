@@ -82,3 +82,14 @@ exports.getAllHouseDetails = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Get house detail by ID
+exports.getHouseDetailById = async (req, res) => {
+  try {
+    const house = await HouseDetail.findById(req.params.id);
+    if (!house) return res.status(404).json({ error: 'Property not found' });
+    res.json(house);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

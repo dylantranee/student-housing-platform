@@ -46,9 +46,6 @@ exports.register = async (req, res) => {
 };
 const jwt = require("jsonwebtoken");
 
-const SECRET = "your_jwt_secret";
-
-
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -61,7 +58,7 @@ exports.login = async (req, res) => {
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
     const accessToken = jwt.sign(
       { id: user._id, name: user.name, email: user.email, roles: user.roles },
-      SECRET,
+      process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: "1h" }
     );
     res.json({

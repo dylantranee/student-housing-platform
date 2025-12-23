@@ -6,7 +6,6 @@ const HouseDetailSchema = new mongoose.Schema({
 	price: { type: Number, required: true },
 	bedrooms: { type: Number, required: true },
 	bathrooms: { type: Number, required: true },
-	area: { type: Number, required: true },
 	description: { type: String },
 	images: [{ type: String }],
 	lat: { type: Number },

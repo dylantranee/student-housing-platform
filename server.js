@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 
 dotenv.config();
 
+console.log('JWT_SECRET loaded:', process.env.JWT_SECRET ? 'Yes (starts with ' + process.env.JWT_SECRET.substring(0, 5) + '...)' : 'No');
+
 // Auth0 JWT validation
 const { auth } = require('express-oauth2-jwt-bearer');
 
@@ -35,8 +37,15 @@ mongoose
 // Routes
 const authRoutes = require("./routes/auth");
 const houseDetailRoutes = require("./routes/houseDetail");
+const roommateProfileRoutes = require("./routes/roommateProfile.routes");
+const matchRequestRoutes = require("./routes/matchRequest.routes");
+const propertyInquiryRoutes = require("./routes/propertyInquiry.routes");
+
 app.use("/api/auth", authRoutes);
 app.use("/api/houseDetail", houseDetailRoutes);
+app.use("/api/roommate-profile", roommateProfileRoutes);
+app.use("/api/match-requests", matchRequestRoutes);
+app.use("/api/property-inquiries", propertyInquiryRoutes);
 
 // Serve uploaded images statically
 const path = require('path');
