@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Container,
   Typography,
@@ -8,61 +8,33 @@ import {
   Button,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { RoommateCard } from '../components/RoommateCard';
 import { RoommateDetailModal } from '../components/RoommateDetailModal';
 import { browseRoommates } from '../service/browseRoommates.service';
 import type { RoommateProfile } from '../types/roommateProfile.types';
-import SortIcon from '@mui/icons-material/Sort';
 import Header from '../components/layout/Header';
 import { COLORS } from '../theme/theme';
 
 export const BrowseRoommatesPage = () => {
-  const [profiles, setProfiles] = useState<RoommateProfile[]>([]);
-  const [filteredProfiles, setFilteredProfiles] = useState<RoommateProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [requiresProfile, setRequiresProfile] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<RoommateProfile | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const navigate = useNavigate();
 
-  const loadProfiles = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      setRequiresProfile(false);
-      
-      const data = await browseRoommates();
-      setProfiles(data);
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to load roommate profiles. Please try again.';
-      setError(errorMessage);
-      
-      // Check if error indicates missing profile
-      if (errorMessage.includes('create your roommate profile')) {
-        setRequiresProfile(true);
-      }
-      
-      console.error('Error loading profiles:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: profiles = [], isLoading, error: queryError } = useQuery({
+    queryKey: ['roommates'],
+    queryFn: browseRoommates,
+  });
 
-  useEffect(() => {
-    loadProfiles();
-  }, []);
+  const errorMessage = queryError instanceof Error ? queryError.message : 
+                 (queryError as any)?.response?.data?.message || 
+                 'Failed to load roommate profiles. Please try again.';
+  
+  const requiresProfile = errorMessage.includes('create your roommate profile');
 
-  useEffect(() => {
-    applyFilters();
-  }, [profiles]);
-
-  const applyFilters = () => {
-    let result = profiles.filter(p => (p.matchScore || 0) >= 40);
-    // Always sort by Match Score
-    result.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
-    setFilteredProfiles(result);
-  };
+  const filteredProfiles = profiles
+    .filter(p => (p.matchScore || 0) >= 40)
+    .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
   const handleViewDetails = (profileId: string) => {
     const profile = profiles.find(p => p._id === profileId);
@@ -141,7 +113,7 @@ export const BrowseRoommatesPage = () => {
       <Container maxWidth="xl" sx={{ py: 10, px: { xs: 2, md: 6 } }}>
 
         {/* Results Metadata Section */}
-        {!loading && filteredProfiles.length > 0 && (
+        {!isLoading && filteredProfiles.length > 0 && (
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography variant="h5" sx={{ fontWeight: 800, color: '#222' }}>
@@ -156,7 +128,7 @@ export const BrowseRoommatesPage = () => {
         )}
 
       {/* Error State */}
-      {error && (
+      {queryError && (
         <Alert 
           severity={requiresProfile ? "info" : "error"} 
           sx={{ mb: 3 }}
@@ -168,12 +140,12 @@ export const BrowseRoommatesPage = () => {
             ) : undefined
           }
         >
-          {error}
+          {errorMessage}
         </Alert>
       )}
 
       {/* Loading State */}
-      {loading ? (
+      {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>

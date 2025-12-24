@@ -18,7 +18,6 @@ import {
     Select,
     MenuItem,
     InputLabel,
-    Checkbox,
     ListItemText,
     OutlinedInput,
     Chip,
@@ -28,6 +27,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
     createRoommateProfile, 
     getRoommateProfile, 
@@ -42,17 +42,13 @@ interface RoommateProfileTabProps {
 }
 
 export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) {
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [profile, setProfile] = useState<RoommateProfile | null>(null);
-    const [photoPreview, setPhotoPreview] = useState<string>('');
-    const [photoFile, setPhotoFile] = useState<File | null>(null);
-    const [error, setError] = useState<string>('');
+    const queryClient = useQueryClient();
     const [success, setSuccess] = useState<string>('');
     const [showOtherUniversity, setShowOtherUniversity] = useState(false);
     const [otherUniversity, setOtherUniversity] = useState('');
-    
-    // Form state
+    const [photoPreview, setPhotoPreview] = useState<string>('');
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+
     const [formData, setFormData] = useState({
         bio: '',
         studyProgram: '',
@@ -60,55 +56,46 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
         moveInDate: null as Dayjs | null,
         budgetMin: 3000000,
         budgetMax: 8000000,
-        // Lifestyle Preferences
         sleepSchedule: '' as 'Early Bird' | 'Night Owl' | 'Flexible' | '',
         cleanliness: 2,
         noiseTolerance: '' as 'Quiet' | 'Moderate' | 'Lively' | '',
         smoking: '' as 'Yes' | 'No' | 'Outside only' | '',
         socialPreference: '' as 'Very social' | 'Moderate' | 'Prefer privacy' | '',
         studyHabits: '' as 'Study at home' | 'Library' | 'Both' | '',
-        // Roommate Requirements
         preferredUniversities: [] as string[],
         roommatesWanted: 1,
         roomType: 'Any' as 'Private' | 'Shared' | 'Any',
         leaseLength: 'Flexible' as '3 months' | '6 months' | '1 year' | 'Flexible',
     });
 
-    useEffect(() => {
-        if (userId) {
-            loadProfile();
-        }
-    }, [userId]);
+    const { data: profile, isLoading: loading, error: fetchError } = useQuery({
+        queryKey: ['roommate-profile', userId],
+        queryFn: () => getRoommateProfile(userId),
+        enabled: !!userId,
+        retry: false, // 404 is common if profile doesn't exist
+    });
 
-    const loadProfile = async () => {
-        try {
-            setLoading(true);
-            const existingProfile = await getRoommateProfile(userId);
-            setProfile(existingProfile);
-            
-            // Populate form
+    useEffect(() => {
+        if (profile) {
             setFormData({
-                bio: existingProfile.bio || '',
-                studyProgram: existingProfile.studyProgram || '',
-                university: existingProfile.university || '',
-                moveInDate: existingProfile.moveInDate ? dayjs(existingProfile.moveInDate) : null,
-                budgetMin: existingProfile.budgetMin || 3000000,
-                budgetMax: existingProfile.budgetMax || 8000000,
-                // Lifestyle Preferences
-                sleepSchedule: existingProfile.sleepSchedule || '',
-                cleanliness: existingProfile.cleanliness || 2,
-                noiseTolerance: existingProfile.noiseTolerance || '',
-                smoking: existingProfile.smoking || '',
-                socialPreference: existingProfile.socialPreference || '',
-                studyHabits: existingProfile.studyHabits || '',
-                // Roommate Requirements
-                preferredUniversities: existingProfile.preferredUniversities || [],
-                roommatesWanted: existingProfile.roommatesWanted || 1,
-                roomType: existingProfile.roomType || 'Any',
-                leaseLength: existingProfile.leaseLength || 'Flexible',
+                bio: profile.bio || '',
+                studyProgram: profile.studyProgram || '',
+                university: profile.university || '',
+                moveInDate: profile.moveInDate ? dayjs(profile.moveInDate) : null,
+                budgetMin: profile.budgetMin || 3000000,
+                budgetMax: profile.budgetMax || 8000000,
+                sleepSchedule: profile.sleepSchedule || '',
+                cleanliness: profile.cleanliness || 2,
+                noiseTolerance: profile.noiseTolerance || '',
+                smoking: profile.smoking || '',
+                socialPreference: profile.socialPreference || '',
+                studyHabits: profile.studyHabits || '',
+                preferredUniversities: profile.preferredUniversities || [],
+                roommatesWanted: profile.roommatesWanted || 1,
+                roomType: profile.roomType || 'Any',
+                leaseLength: profile.leaseLength || 'Flexible',
             });
-            
-            // Check if any university is a custom value
+
             const predefinedUniversities = [
                 'Vietnam National University, Ho Chi Minh City', 'University of Technology - VNUHCM',
                 'University of Science - VNUHCM', 'University of Social Sciences and Humanities - VNUHCM',
@@ -118,7 +105,7 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                 'Ton Duc Thang University', 'Hoa Sen University'
             ];
             
-            const customUniversities = (existingProfile.preferredUniversities || []).filter(
+            const customUniversities = (profile.preferredUniversities || []).filter(
                 uni => !predefinedUniversities.includes(uni)
             );
             
@@ -127,71 +114,23 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                 setOtherUniversity(customUniversities.join(', '));
             }
             
-            if (existingProfile.profilePhoto) {
-                setPhotoPreview(existingProfile.profilePhoto.startsWith('http') ? existingProfile.profilePhoto : `${UPLOADS_BASE_URL}/${existingProfile.profilePhoto}`);
+            if (profile.profilePhoto) {
+                setPhotoPreview(profile.profilePhoto.startsWith('http') ? profile.profilePhoto : `${UPLOADS_BASE_URL}/${profile.profilePhoto}`);
             }
-        } catch (profileErr: any) {
-            if (profileErr.response?.status === 404) {
-                // Expected - user hasn't created a profile yet, no need to log as error
-                console.log('No existing profile found');
-            } else {
-                console.error('Error loading profile:', profileErr);
-                setError('Failed to load roommate profile');
-            }
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [profile]);
 
-    const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                setError('File size must be less than 5MB');
-                return;
-            }
-            if (!file.type.startsWith('image/')) {
-                setError('Only image files are allowed');
-                return;
-            }
-            setPhotoFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhotoPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleSaveDraft = async () => {
-        await saveProfile('draft');
-    };
-
-    const handlePublish = async () => {
-        if (!formData.bio || !formData.studyProgram || !formData.university || !formData.moveInDate) {
-            setError('Please fill all required fields before publishing');
-            return;
-        }
-        await saveProfile('published');
-    };
-
-    const saveProfile = async (status: 'draft' | 'published') => {
-        setError('');
-        setSuccess('');
-        setSaving(true);
-
-        try {
+    const saveMutation = useMutation({
+        mutationFn: async ({ status }: { status: 'draft' | 'published' }) => {
             let universitiesList = [...formData.preferredUniversities];
             if (formData.preferredUniversities.includes('Other') && otherUniversity.trim()) {
                 universitiesList = universitiesList.filter(u => u !== 'Other');
                 const customUnis = otherUniversity.split(',').map(u => u.trim()).filter(u => u);
                 universitiesList.push(...customUnis);
             }
-            
-            // Clean up profileData to remove empty strings for fields that backend models might expect to be optional or valid enums
+
             const cleanedFormData = Object.fromEntries(
                 Object.entries(formData).map(([key, value]) => {
-                    // If it's an empty string and not a critical field, set to undefined/null or omit
                     if (value === '' && ['sleepSchedule', 'noiseTolerance', 'smoking', 'socialPreference', 'studyHabits'].includes(key)) {
                         return [key, undefined];
                     }
@@ -221,18 +160,41 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                 setPhotoFile(null);
             }
 
-            setProfile(savedProfile);
-            setSuccess(status === 'published' ? 'Roommate profile published!' : 'Draft saved!');
-        } catch (err: any) {
-            const backendError = err.response?.data;
-            if (backendError?.errors && Array.isArray(backendError.errors)) {
-                setError(`${backendError.message}: ${backendError.errors.join(', ')}`);
-            } else {
-                setError(backendError?.message || 'Failed to save profile');
+            return savedProfile;
+        },
+        onSuccess: (data, variables) => {
+            queryClient.setQueryData(['roommate-profile', userId], data);
+            setSuccess(variables.status === 'published' ? 'Roommate profile published!' : 'Draft saved!');
+        },
+    });
+
+    const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setSuccess(''); // Clear success
+                return;
             }
-        } finally {
-            setSaving(false);
+            if (!file.type.startsWith('image/')) {
+                return;
+            }
+            setPhotoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhotoPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
         }
+    };
+
+    const handleSaveDraft = () => saveMutation.mutate({ status: 'draft' });
+
+    const handlePublish = () => {
+        if (!formData.bio || !formData.studyProgram || !formData.university || !formData.moveInDate) {
+            setSuccess('');
+            return;
+        }
+        saveMutation.mutate({ status: 'published' });
     };
 
     if (loading) {
@@ -242,6 +204,9 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
             </Box>
         );
     }
+
+    const saving = saveMutation.isPending;
+    const error = (saveMutation.error as any)?.message || (fetchError as any)?.response?.status === 404 ? '' : (fetchError as any)?.message;
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>

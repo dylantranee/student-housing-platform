@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     Box, 
@@ -19,9 +19,9 @@ import {
     CheckCircleOutline,
     Star
 } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
 import Header from '../components/layout/Header';
 import { getPropertyDetail } from '../service/properties/getPropertyDetail.service';
-import type { Property } from '../service/properties/getProperties.service';
 import LeafletMap from '../components/common/LeafletMap';
 import { UPLOADS_BASE_URL } from '../config/apiConfig';
 import { browseRoommates } from '../service/browseRoommates.service';
@@ -54,51 +54,40 @@ const BathIcon = () => (
         <path d="M7,5c-.55225,0-1-.44775-1-1,0-1.10303-.89697-2-2-2s-2,.89697-2,2c0,.55225-.44775,1-1,1s-1-.44775-1-1C0,1.79443,1.79443,0,4,0s4,1.79443,4,4c0,.55225-.44775,1-1,1Z" />
         <path d="M2,18c-.25586,0-.51172-.09766-.70703-.29297-.39062-.39062-.39062-1.02344,0-1.41406l1-1c.39062-.39062,1.02344-.39062,1.41406,0s.39062,1.02344,0,1.41406l-1,1c-.19531.19531-.45117.29297-.70703.29297Z" />
         <path d="M16,18c-.25586,0-.51172-.09766-.70703-.29297l-1-1c-.39062-.39062-.39062-1.02344,0-1.41406s1.02344-.39062,1.41406,0l1,1c.39062.39062.39062,1.02344,0,1.41406-.19531.19531-.45117.29297-.70703.29297Z" />
-        <path d="M9,6.8291c-.25586,0-.51172-.09766-.70703-.29297-.69141-.69141-1.89453-.69141-2.58594,0-.39062.39062-1.02344.39062-1.41406,0s-.39062-1.02344,0-1.41406c1.49219-1.49316,3.92188-1.49316,5.41406,0,.39062.39062.39062,1.02344,0,1.41406-.19531.19531-.45117.29297-.70703.29297Z" />
+        <path d="M9,6.8291c-.25586,0-.51172-.09766-.70703-.29297-.69141-.69141-1.89453-.69141-2.58594,0-.39062.39062-1.02344.39062,1.41406,0s-.39062-1.02344,0-1.41406c1.49219-1.49316,3.92188-1.49316,5.41406,0,.39062.39062.39062,1.02344,0,1.41406-.19531.19531-.45117.29297-.70703.29297Z" />
     </svg>
 );
 
 export default function PropertyDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [property, setProperty] = useState<Property | null>(null);
-    const [loading, setLoading] = useState(true);
     const [mainImg, setMainImg] = useState<string>('');
-    const [potentialRoommates, setPotentialRoommates] = useState<RoommateProfile[]>([]);
     const [selectedRoommate, setSelectedRoommate] = useState<RoommateProfile | null>(null);
     const [showRoommateModal, setShowRoommateModal] = useState(false);
     const [showContactModal, setShowContactModal] = useState(false);
     const [position, setPosition] = useState<[number, number]>([10.762622, 106.660172]);
 
-    useEffect(() => {
-        if (!id) return;
-        const fetchDetail = async () => {
-            try {
-                const data = await getPropertyDetail(id);
-                setProperty(data);
-                
-                // Fetch potential roommates independently
-                try {
-                    const roommates = await browseRoommates();
-                    const propertyPrice = data.price || 0;
-                    const compatible = roommates
-                        .filter(r => (r.matchScore || 0) >= 40)
-                        .filter(r => (r.budgetMax || 0) >= (propertyPrice * 0.4))
-                        .slice(0, 3);
-                    setPotentialRoommates(compatible);
-                } catch (roommateError) {
-                    console.log("No roommate matches available or profile not set up yet.");
-                }
-            } catch (error) {
-                console.error("Failed to fetch property details", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDetail();
-    }, [id]);
+    const { data: property, isLoading: propertyLoading } = useQuery({
+        queryKey: ['property', id],
+        queryFn: () => getPropertyDetail(id!),
+        enabled: !!id,
+    });
 
-    // Update mainImg when property loads
+    const { data: allRoommates } = useQuery({
+        queryKey: ['roommates'],
+        queryFn: browseRoommates,
+        enabled: !!property,
+    });
+
+    const potentialRoommates = useMemo(() => {
+        if (!property || !allRoommates) return [];
+        const propertyPrice = property.price || 0;
+        return allRoommates
+            .filter(r => (r.matchScore || 0) >= 40)
+            .filter(r => (r.budgetMax || 0) >= (propertyPrice * 0.4))
+            .slice(0, 3);
+    }, [property, allRoommates]);
+
     useEffect(() => {
         if (property) {
             const images = property.images && property.images.length > 0 
@@ -106,14 +95,13 @@ export default function PropertyDetailPage() {
                 : FALLBACK_IMAGES;
             setMainImg(images[0]);
             
-            // Update position if property has coordinates
             if (property.lat && property.lng) {
                 setPosition([property.lat, property.lng]);
             }
         }
     }, [property]);
 
-    if (loading) {
+    if (propertyLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                 <CircularProgress sx={{ color: COLORS.primary }} />
@@ -447,7 +435,6 @@ export default function PropertyDetailPage() {
                 profile={selectedRoommate}
                 open={showRoommateModal}
                 onClose={() => setShowRoommateModal(false)}
-                contextPropertyTitle={property?.title}
                 contextPropertyUrl={window.location.href}
             />
 

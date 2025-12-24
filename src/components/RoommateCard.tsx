@@ -1,5 +1,5 @@
-import { Card, CardContent, CardMedia, Typography, Box, Chip, Button, Stack, Avatar } from '@mui/material';
-import { School, CalendarMonth, AttachMoney, AutoAwesome, NightsStay, VolumeUp, SmokingRooms } from '@mui/icons-material';
+import { Card, CardContent, Typography, Box, Chip, Button, Avatar } from '@mui/material';
+import { School, AutoAwesome, NightsStay, VolumeUp } from '@mui/icons-material';
 import type { RoommateProfile } from '../types/roommateProfile.types';
 
 interface RoommateCardProps {
@@ -8,7 +8,7 @@ interface RoommateCardProps {
   variant?: 'default' | 'compact';
 }
 
-const UPLOADS_BASE_URL = 'http://localhost:3000/uploads';
+import { UPLOADS_BASE_URL } from '../config/apiConfig';
 
 export const RoommateCard: React.FC<RoommateCardProps> = ({ profile, onViewDetails, variant = 'default' }) => {
   const formatCurrency = (amount?: number) => {

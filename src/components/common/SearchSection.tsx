@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Button, Typography, Chip } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import { COLORS } from '../../theme/theme';
 
 interface SearchSectionProps {
@@ -16,21 +16,6 @@ export default function SearchSection({ onSearch }: SearchSectionProps) {
 
   const handleSearch = () => {
     onSearch(searchLocation, searchPropertyType, searchPriceRange);
-  };
-
-  const handleQuickSearch = (location?: string, propertyType?: string, maxPrice?: number) => {
-    const newLocation = location || searchLocation;
-    const newPropertyType = propertyType || searchPropertyType;
-    const newPriceRange = maxPrice 
-      ? { ...searchPriceRange, max: maxPrice } 
-      : searchPriceRange;
-
-    if (location) setSearchLocation(location);
-    if (propertyType) setSearchPropertyType(propertyType);
-    if (maxPrice) setSearchPriceRange(prev => ({ ...prev, max: maxPrice }));
-
-    // Trigger search ngay lập tức
-    onSearch(newLocation, newPropertyType, newPriceRange);
   };
 
   return (

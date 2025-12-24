@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Container, 
   Typography, 
@@ -11,8 +11,7 @@ import {
   Chip, 
   Stack, 
   CircularProgress,
-  Paper,
-  Alert
+  Paper
 } from '@mui/material';
 import { 
   Check, 
@@ -24,13 +23,13 @@ import {
   HomeWork,
   Business
 } from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyRequests, respondToMatchRequest, cancelMatchRequest } from '../service/roommate/matchRequest.service';
 import type { MatchRequest } from '../service/roommate/matchRequest.service';
 import { getMyInquiries, withdrawInquiry, type PropertyInquiry } from '../service/propertyInquiry.service';
 import Header from '../components/layout/Header';
 import { COLORS } from '../theme/theme';
-
-const UPLOADS_BASE_URL = 'http://localhost:3000/uploads';
+import { UPLOADS_BASE_URL } from '../config/apiConfig';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -57,62 +56,61 @@ function TabPanel(props: TabPanelProps) {
 
 const MyRequestsPage: React.FC = () => {
   const [value, setValue] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState<{ incoming: MatchRequest[], outgoing: MatchRequest[] }>({ incoming: [], outgoing: [] });
-  const [propertyInquiries, setPropertyInquiries] = useState<PropertyInquiry[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchRequests = async () => {
-    try {
-      setLoading(true);
-      const [requestsData, inquiriesData] = await Promise.all([
-        getMyRequests(),
-        getMyInquiries()
-      ]);
-      setRequests(requestsData);
-      setPropertyInquiries(inquiriesData);
-    } catch (err) {
-      setError('Failed to load requests');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: requests = { incoming: [], outgoing: [] }, isLoading: loadingRequests } = useQuery({
+    queryKey: ['my-requests'],
+    queryFn: getMyRequests,
+  });
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  const { data: propertyInquiries = [], isLoading: loadingInquiries } = useQuery({
+    queryKey: ['property-inquiries'],
+    queryFn: getMyInquiries,
+  });
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const respondMutation = useMutation({
+    mutationFn: ({ requestId, status }: { requestId: string, status: 'accepted' | 'declined' }) => 
+      respondToMatchRequest(requestId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+    },
+    onError: () => alert('Failed to update request'),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelMatchRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+    },
+    onError: () => alert('Failed to cancel request'),
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: withdrawInquiry,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['property-inquiries'] });
+    },
+    onError: () => alert('Failed to withdraw inquiry'),
+  });
+
+  const isLoading = loadingRequests || loadingInquiries;
+
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
-  const handleResponse = async (requestId: string, status: 'accepted' | 'declined') => {
-    try {
-      await respondToMatchRequest(requestId, status);
-      fetchRequests(); // Refresh
-    } catch (err) {
-      alert('Failed to update request');
-    }
+  const handleResponse = (requestId: string, status: 'accepted' | 'declined') => {
+    respondMutation.mutate({ requestId, status });
   };
 
-  const handleCancel = async (requestId: string) => {
+  const handleCancel = (requestId: string) => {
     if (!window.confirm('Are you sure you want to cancel this request?')) return;
-    try {
-      await cancelMatchRequest(requestId);
-      fetchRequests(); // Refresh
-    } catch (err) {
-      alert('Failed to cancel request');
-    }
+    cancelMutation.mutate(requestId);
   };
 
-  const handleWithdrawInquiry = async (inquiryId: string) => {
+  const handleWithdrawInquiry = (inquiryId: string) => {
     if (!window.confirm('Are you sure you want to withdraw this inquiry? The landlord will be notified.')) return;
-    try {
-      await withdrawInquiry(inquiryId);
-      fetchRequests(); // Refresh
-    } catch (err) {
-      alert('Failed to withdraw inquiry');
-    }
+    withdrawMutation.mutate(inquiryId);
   };
 
   const RequestCard = ({ req, type }: { req: MatchRequest, type: 'incoming' | 'outgoing' }) => {
@@ -371,9 +369,8 @@ const MyRequestsPage: React.FC = () => {
           </Tabs>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        {loading ? (
+        {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress sx={{ color: COLORS.primary }} />
           </Box>

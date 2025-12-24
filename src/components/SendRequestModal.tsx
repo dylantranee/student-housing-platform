@@ -13,7 +13,7 @@ import {
   CircularProgress,
   Avatar,
 } from '@mui/material';
-import { Close, Send } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 import { sendMatchRequest } from '../service/roommate/matchRequest.service';
 
 interface SendRequestModalProps {
@@ -23,11 +23,10 @@ interface SendRequestModalProps {
   receiverName: string;
   receiverPhoto?: string;
   onSuccess?: () => void;
-  contextPropertyTitle?: string;
   contextPropertyUrl?: string;
 }
 
-const UPLOADS_BASE_URL = 'http://localhost:3000/uploads';
+import { UPLOADS_BASE_URL } from '../config/apiConfig';
 
 export const SendRequestModal: React.FC<SendRequestModalProps> = ({
   open,
@@ -36,7 +35,6 @@ export const SendRequestModal: React.FC<SendRequestModalProps> = ({
   receiverName,
   receiverPhoto,
   onSuccess,
-  contextPropertyTitle,
   contextPropertyUrl,
 }) => {
   const [message, setMessage] = useState('');

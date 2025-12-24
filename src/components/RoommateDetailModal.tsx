@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -10,12 +9,11 @@ import {
   Avatar,
   Chip,
   Stack,
-  Divider,
   Grid,
   LinearProgress,
   Tooltip,
 } from '@mui/material';
-import { Close, School, CalendarMonth, AttachMoney } from '@mui/icons-material';
+import { Close, School } from '@mui/icons-material';
 import { IconButton, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import type { RoommateProfile } from '../types/roommateProfile.types';
@@ -25,17 +23,15 @@ interface RoommateDetailModalProps {
   profile: RoommateProfile | null;
   open: boolean;
   onClose: () => void;
-  contextPropertyTitle?: string;
   contextPropertyUrl?: string;
 }
 
-const UPLOADS_BASE_URL = 'http://localhost:3000/uploads';
+import { UPLOADS_BASE_URL } from '../config/apiConfig';
 
 export const RoommateDetailModal: React.FC<RoommateDetailModalProps> = ({
   profile,
   open,
   onClose,
-  contextPropertyTitle,
   contextPropertyUrl,
 }) => {
   const navigate = useNavigate();
@@ -375,7 +371,6 @@ export const RoommateDetailModal: React.FC<RoommateDetailModalProps> = ({
         receiverName={(profile.userId as any)?.name || 'Anonymous'}
         receiverPhoto={profile.profilePhoto}
         onSuccess={() => setRequestSent(true)}
-        contextPropertyTitle={contextPropertyTitle}
         contextPropertyUrl={contextPropertyUrl}
       />
     </Dialog>

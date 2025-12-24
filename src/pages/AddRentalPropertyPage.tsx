@@ -33,7 +33,6 @@ const AddRentalPropertyPage: React.FC = () => {
 	       };
 	       const [form, setForm] = useState(initialFormState);
 	       const [position, setPosition] = useState<[number, number]>([10.762622, 106.660172]);
-	       const [address, setAddress] = useState<string>("");
 
 	useEffect(() => {
 		async function fetchProfile() {
@@ -349,7 +348,7 @@ const AddRentalPropertyPage: React.FC = () => {
 							<LeafletMap 
 								position={position}
 								setPosition={setPosition}
-								setAddress={setAddress}
+								setAddress={() => {}}
 								radiusKm={0}
 								properties={[]}
 								onLocationChange={(lat, lng, addr) => {
