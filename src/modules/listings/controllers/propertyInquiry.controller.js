@@ -6,7 +6,7 @@ const MatchRequest = require('../../roommates/models/matchRequest.model'); // Fi
 exports.createInquiry = async (req, res) => {
     try {
         const userId = req.user._id || req.user.id;
-        const { propertyId, message, moveInDate, tenantPhone, linkedRoommateId } = req.body;
+        const { propertyId, message, moveInDate, tenantPhone, linkedRoommateIds } = req.body;
 
         if (!propertyId || !message || !moveInDate) {
             return res.status(400).json({ 
@@ -41,33 +41,25 @@ exports.createInquiry = async (req, res) => {
             });
         }
 
-        let linkedRoommateData = {};
-        if (linkedRoommateId) {
-            const connection = await MatchRequest.findOne({
-                $or: [
-                    { senderId: userId, receiverId: linkedRoommateId, status: 'accepted' },
-                    { senderId: linkedRoommateId, receiverId: userId, status: 'accepted' }
-                ]
-            });
+        let linkedRoommates = [];
+        if (linkedRoommateIds && Array.isArray(linkedRoommateIds) && linkedRoommateIds.length > 0) {
+            for (const roommateId of linkedRoommateIds) {
+                // Removed connection check: any roommate can be invited to an inquiry group.
+                // The invited roommates will need to confirm the request on their dashboard.
 
-            if (!connection) {
-                return res.status(400).json({ 
-                    message: 'You can only link roommates with accepted connections' 
+                const roommate = await User.findById(roommateId).select('name email phone');
+                if (!roommate) {
+                    return res.status(404).json({ message: `Roommate with ID ${roommateId} not found` });
+                }
+
+                linkedRoommates.push({
+                    user: roommateId,
+                    name: roommate.name,
+                    email: roommate.email,
+                    phone: roommate.phone || '',
+                    confirmed: false
                 });
             }
-
-            const roommate = await User.findById(linkedRoommateId).select('name email phone');
-            if (!roommate) {
-                return res.status(404).json({ message: 'Linked roommate not found' });
-            }
-
-            linkedRoommateData = {
-                linkedRoommateId,
-                linkedRoommateName: roommate.name,
-                linkedRoommateEmail: roommate.email,
-                linkedRoommatePhone: roommate.phone || '',
-                linkedRoommateConfirmed: false
-            };
         }
 
         const inquiry = new PropertyInquiry({
@@ -78,8 +70,8 @@ exports.createInquiry = async (req, res) => {
             tenantPhone: phone,
             message,
             moveInDate,
-            status: 'pending',
-            ...linkedRoommateData
+            status: linkedRoommates.length > 0 ? 'awaiting_roommates' : 'pending',
+            linkedRoommates
         });
 
         await inquiry.save();
@@ -96,7 +88,7 @@ exports.getMyInquiries = async (req, res) => {
         const inquiries = await PropertyInquiry.find({
             $or: [
                 { tenantId: userId },
-                { linkedRoommateId: userId }
+                { 'linkedRoommates.user': userId }
             ]
         })
             .populate('propertyId', 'title address price images')
@@ -114,7 +106,10 @@ exports.getPropertyInquiries = async (req, res) => {
         const property = await HouseDetail.findById(propertyId);
         if (!property) return res.status(404).json({ message: 'Property not found' });
 
-        const inquiries = await PropertyInquiry.find({ propertyId })
+        const inquiries = await PropertyInquiry.find({ 
+            propertyId,
+            status: { $nin: ['awaiting_roommates', 'withdrawn'] } 
+        })
             .populate('tenantId', 'name email')
             .sort({ createdAt: -1 });
 
@@ -131,13 +126,26 @@ exports.confirmLinkedRoommate = async (req, res) => {
         const inquiry = await PropertyInquiry.findById(inquiryId);
         if (!inquiry) return res.status(404).json({ message: 'Inquiry not found' });
 
-        if (!inquiry.linkedRoommateId || inquiry.linkedRoommateId.toString() !== userId.toString()) {
+        const roommateEntry = inquiry.linkedRoommates.find(r => r.user.toString() === userId.toString());
+        if (!roommateEntry) {
             return res.status(403).json({ message: 'You are not authorized to confirm this inquiry' });
         }
 
-        inquiry.linkedRoommateConfirmed = true;
+        roommateEntry.confirmed = true;
+        
+        // Check if all roommates have confirmed
+        const allConfirmed = inquiry.linkedRoommates.every(r => r.confirmed);
+        if (allConfirmed) {
+            inquiry.status = 'pending';
+        }
+
         await inquiry.save();
-        res.json({ message: 'Successfully confirmed interest in this property', inquiry });
+        res.json({ 
+            message: allConfirmed 
+                ? 'All roommates confirmed! The inquiry is now sent to the landlord.' 
+                : 'Successfully confirmed interest in this property', 
+            inquiry 
+        });
     } catch (error) {
         res.status(500).json({ message: 'Failed to confirm interest', error: error.message });
     }
