@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { 
   Box, 
   Typography, 
@@ -7,7 +7,6 @@ import {
   Alert, 
   Button, 
   TextField, 
-  InputAdornment, 
   Snackbar,
   Container,
   Tabs,
@@ -15,15 +14,15 @@ import {
   Divider,
   Stack
 } from '@mui/material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProfile } from '../service/user/getProfile.service';
 import { updateProfile } from '../service/user/updateProfile.service';
-import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import CakeIcon from '@mui/icons-material/Cake';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Header from '../components/layout/Header';
 import RoommateProfileTab from '../components/profile/RoommateProfileTab';
 import { COLORS } from '../theme/theme';
@@ -52,14 +51,10 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function ProfilePage() {
-	const navigate = useNavigate();
 	const [searchParams, setSearchParams] = useSearchParams();
-	const [user, setUser] = useState<any>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
+	const queryClient = useQueryClient();
 	const [editMode, setEditMode] = useState(false);
 	
-	// Initialize tab from query param if present
 	const initialTab = searchParams.get('tab') === 'roommate' ? 1 : 0;
 	const [tabValue, setTabValue] = useState(initialTab);
 	
@@ -68,30 +63,38 @@ export default function ProfilePage() {
 	const [success, setSuccess] = useState('');
 	const [openSnackbar, setOpenSnackbar] = useState(false);
 
-	useEffect(() => {
-		async function fetchProfile() {
-			setLoading(true);
-			setError('');
-			try {
-				const res = await getProfile();
-				const data = res.data || res;
-				setUser(data);
-				setForm({
-					name: data.name || '',
-					age: data.age || '',
-					phone: data.phone || '',
-					email: data.email || '',
-				});
-			} catch (err: any) {
-				setError('Failed to load profile. Please log in again.');
-			} finally {
-				setLoading(false);
-			}
-		}
-		fetchProfile();
-	}, []);
+	const { data, isLoading: loading, error: fetchError } = useQuery({
+		queryKey: ['profile'],
+		queryFn: getProfile,
+	});
 
-	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+	const user = useMemo(() => data?.data || data, [data]);
+
+	useEffect(() => {
+		if (user) {
+			setForm({
+				name: user.name || '',
+				age: user.age || '',
+				phone: user.phone || '',
+				email: user.email || '',
+			});
+		}
+	}, [user]);
+
+	const updateMutation = useMutation({
+		mutationFn: updateProfile,
+		onSuccess: (res) => {
+			queryClient.setQueryData(['profile'], res);
+			setEditMode(false);
+			setSuccess('Profile updated successfully');
+			setOpenSnackbar(true);
+		},
+		onError: () => {
+			setOpenSnackbar(true);
+		},
+	});
+
+	const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
 		setTabValue(newValue);
 		setSearchParams({ tab: newValue === 1 ? 'roommate' : 'account' });
 	};
@@ -114,21 +117,12 @@ export default function ProfilePage() {
 	const handleSave = async (e: any) => {
 		e.preventDefault();
 		if (!validate()) return;
-		try {
-			const res = await updateProfile({
-				name: form.name,
-				age: Number(form.age),
-				phone: form.phone,
-				email: form.email,
-			});
-			setUser((prev: any) => ({ ...prev, ...res.data }));
-			setEditMode(false);
-			setSuccess('Profile updated successfully');
-			setOpenSnackbar(true);
-		} catch (err: any) {
-			setError('Failed to update profile');
-			setOpenSnackbar(true);
-		}
+		updateMutation.mutate({
+			name: form.name,
+			age: Number(form.age),
+			phone: form.phone,
+			email: form.email,
+		});
 	};
 
 	return (
@@ -265,7 +259,7 @@ export default function ProfilePage() {
 
 				<Snackbar open={openSnackbar} autoHideDuration={3000} onClose={() => setOpenSnackbar(false)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
 					<Alert severity={success ? 'success' : 'error'} variant="filled" sx={{ width: '100%', borderRadius: 3 }}>
-						{success || error}
+						{success || (updateMutation.error as any)?.message || (fetchError as any)?.message || 'An error occurred'}
 					</Alert>
 				</Snackbar>
 			</Container>

@@ -77,6 +77,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
         const imagePath = typeof firstImage === 'object' && (firstImage as any).filename 
             ? (firstImage as any).filename 
             : firstImage;
+        if (!imagePath) return fallbackImage;
             
         if (imagePath.startsWith('http')) {
             return imagePath;

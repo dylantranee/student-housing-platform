@@ -22,12 +22,14 @@ export interface PropertyInquiry {
   tenantPhone: string;
   message: string;
   moveInDate: string;
-  status: 'pending' | 'contacted' | 'viewed' | 'rejected';
-  linkedRoommateId?: string;
-  linkedRoommateName?: string;
-  linkedRoommateEmail?: string;
-  linkedRoommatePhone?: string;
-  linkedRoommateConfirmed?: boolean;
+  status: 'pending' | 'awaiting_roommates' | 'contacted' | 'viewed' | 'rejected' | 'withdrawn';
+  linkedRoommates?: {
+    user: string;
+    name: string;
+    email: string;
+    phone: string;
+    confirmed: boolean;
+  }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -37,7 +39,7 @@ export interface InquirySubmission {
   message: string;
   moveInDate: string;
   tenantPhone?: string;
-  linkedRoommateId?: string;
+  linkedRoommateIds?: string[];
 }
 
 export const submitInquiry = async (data: InquirySubmission): Promise<PropertyInquiry> => {

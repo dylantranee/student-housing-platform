@@ -40,7 +40,7 @@ export interface MyRequestsData {
 export const sendMatchRequest = async (data: SendRequestData) => {
   try {
     const token = getAuthToken();
-    const response = await axios.post(`${API_URL}/send`, data, {
+    const response = await axios.post(`${API_URL}/`, data, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -56,7 +56,7 @@ export const sendMatchRequest = async (data: SendRequestData) => {
 export const cancelMatchRequest = async (requestId: string) => {
   try {
     const token = getAuthToken();
-    const response = await axios.patch(`${API_URL}/cancel/${requestId}`, {}, {
+    const response = await axios.patch(`${API_URL}/${requestId}/cancel`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -86,7 +86,7 @@ export const getMyRequests = async (): Promise<MyRequestsData> => {
 export const respondToMatchRequest = async (requestId: string, status: 'accepted' | 'declined') => {
   try {
     const token = getAuthToken();
-    const response = await axios.patch(`${API_URL}/respond/${requestId}`, { status }, {
+    const response = await axios.patch(`${API_URL}/${requestId}/respond`, { status }, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

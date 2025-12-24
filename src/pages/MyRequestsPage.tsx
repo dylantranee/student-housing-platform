@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Container, 
   Typography, 
@@ -11,8 +12,7 @@ import {
   Chip, 
   Stack, 
   CircularProgress,
-  Paper,
-  Alert
+  Paper
 } from '@mui/material';
 import { 
   Check, 
@@ -24,13 +24,14 @@ import {
   HomeWork,
   Business
 } from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyRequests, respondToMatchRequest, cancelMatchRequest } from '../service/roommate/matchRequest.service';
 import type { MatchRequest } from '../service/roommate/matchRequest.service';
-import { getMyInquiries, withdrawInquiry, type PropertyInquiry } from '../service/propertyInquiry.service';
+import { getMyInquiries, withdrawInquiry, confirmLinkedInquiry, type PropertyInquiry } from '../service/propertyInquiry.service';
+import { getProfile } from '../service/user/getProfile.service';
 import Header from '../components/layout/Header';
 import { COLORS } from '../theme/theme';
-
-const UPLOADS_BASE_URL = 'http://localhost:3000/uploads';
+import { UPLOADS_BASE_URL } from '../config/apiConfig';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,62 +57,84 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const MyRequestsPage: React.FC = () => {
-  const [value, setValue] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [requests, setRequests] = useState<{ incoming: MatchRequest[], outgoing: MatchRequest[] }>({ incoming: [], outgoing: [] });
-  const [propertyInquiries, setPropertyInquiries] = useState<PropertyInquiry[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchRequests = async () => {
-    try {
-      setLoading(true);
-      const [requestsData, inquiriesData] = await Promise.all([
-        getMyRequests(),
-        getMyInquiries()
-      ]);
-      setRequests(requestsData);
-      setPropertyInquiries(inquiriesData);
-    } catch (err) {
-      setError('Failed to load requests');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialValue = parseInt(searchParams.get('tab') || '0');
+  const [value, setValue] = useState(initialValue);
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    const tab = parseInt(searchParams.get('tab') || '0');
+    if (tab !== value) setValue(tab);
+  }, [searchParams]);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const queryClient = useQueryClient();
+
+  const { data: requests = { incoming: [], outgoing: [] }, isLoading: loadingRequests } = useQuery({
+    queryKey: ['my-requests'],
+    queryFn: getMyRequests,
+  });
+
+  const { data: propertyInquiries = [], isLoading: loadingInquiries } = useQuery({
+    queryKey: ['property-inquiries'],
+    queryFn: getMyInquiries,
+  });
+
+  const { data: userData } = useQuery({
+    queryKey: ['profile'],
+    queryFn: () => getProfile().then(res => res.data || res),
+  });
+
+  const respondMutation = useMutation({
+    mutationFn: ({ requestId, status }: { requestId: string, status: 'accepted' | 'declined' }) => 
+      respondToMatchRequest(requestId, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+    },
+    onError: () => alert('Failed to update request'),
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelMatchRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+    },
+    onError: () => alert('Failed to cancel request'),
+  });
+
+  const withdrawMutation = useMutation({
+    mutationFn: withdrawInquiry,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['property-inquiries'] });
+    },
+    onError: () => alert('Failed to withdraw inquiry'),
+  });
+
+  const isLoading = loadingRequests || loadingInquiries;
+
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
+    setSearchParams({ tab: newValue.toString() });
   };
 
-  const handleResponse = async (requestId: string, status: 'accepted' | 'declined') => {
-    try {
-      await respondToMatchRequest(requestId, status);
-      fetchRequests(); // Refresh
-    } catch (err) {
-      alert('Failed to update request');
-    }
+  const handleResponse = (requestId: string, status: 'accepted' | 'declined') => {
+    respondMutation.mutate({ requestId, status });
   };
 
-  const handleCancel = async (requestId: string) => {
+  const handleCancel = (requestId: string) => {
     if (!window.confirm('Are you sure you want to cancel this request?')) return;
-    try {
-      await cancelMatchRequest(requestId);
-      fetchRequests(); // Refresh
-    } catch (err) {
-      alert('Failed to cancel request');
-    }
+    cancelMutation.mutate(requestId);
   };
 
-  const handleWithdrawInquiry = async (inquiryId: string) => {
+  const handleWithdrawInquiry = (inquiryId: string) => {
     if (!window.confirm('Are you sure you want to withdraw this inquiry? The landlord will be notified.')) return;
+    withdrawMutation.mutate(inquiryId);
+  };
+
+  const handleConfirmInquiry = async (inquiryId: string) => {
     try {
-      await withdrawInquiry(inquiryId);
-      fetchRequests(); // Refresh
+      await confirmLinkedInquiry(inquiryId);
+      queryClient.invalidateQueries({ queryKey: ['property-inquiries'] });
     } catch (err) {
-      alert('Failed to withdraw inquiry');
+      console.error('Error confirming inquiry:', err);
     }
   };
 
@@ -137,7 +160,7 @@ const MyRequestsPage: React.FC = () => {
         }}
       >
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-          <Avatar src={photoUrl} sx={{ width: 64, height: 64, border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+          <Avatar src={photoUrl || undefined} sx={{ width: 64, height: 64, border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
           
           <Box sx={{ flexGrow: 1 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -232,7 +255,7 @@ const MyRequestsPage: React.FC = () => {
     const property = inquiry.propertyId as any;
     const propertyImage = property?.images?.[0] 
       ? (property.images[0].startsWith('http') ? property.images[0] : `${UPLOADS_BASE_URL}/${property.images[0]}`)
-      : 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&q=80';
+      : undefined;
 
     const formatDate = (dateStr: string) => {
       const date = new Date(dateStr);
@@ -257,7 +280,7 @@ const MyRequestsPage: React.FC = () => {
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
           <Box
             component="img"
-            src={propertyImage}
+            src={propertyImage || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=400&q=80'}
             sx={{
               width: 100,
               height: 100,
@@ -279,19 +302,34 @@ const MyRequestsPage: React.FC = () => {
                 </Typography>
               </Box>
               <Chip 
-                label={inquiry.status.toUpperCase()} 
+                label={inquiry.status === 'awaiting_roommates' ? 'Awaiting Group' : inquiry.status.toUpperCase()} 
                 size="small" 
-                color={inquiry.status === 'rejected' ? 'default' : 'info'}
+                color={
+                  inquiry.status === 'rejected' ? 'default' : 
+                  inquiry.status === 'awaiting_roommates' ? 'warning' : 'info'
+                }
                 sx={{ fontWeight: 800, px: 1, borderRadius: 2 }}
               />
             </Box>
 
-            {inquiry.linkedRoommateName && (
+            {inquiry.linkedRoommates && inquiry.linkedRoommates.length > 0 && (
               <Box sx={{ mb: 2, p: 1.5, bgcolor: '#F0F7FF', borderRadius: 2 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1976d2' }}>
-                  Applying with: {inquiry.linkedRoommateName}
-                  {inquiry.linkedRoommateConfirmed && ' ✓'}
+                <Typography variant="caption" sx={{ fontWeight: 700, color: '#1976d2', display: 'block', mb: 0.5 }}>
+                  Group Members:
                 </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {inquiry.linkedRoommates.map((rm, idx) => (
+                    <Chip
+                      key={idx}
+                      label={rm.name}
+                      size="small"
+                      variant={rm.confirmed ? "filled" : "outlined"}
+                      color={rm.confirmed ? "info" : "default"}
+                      icon={rm.confirmed ? <Check sx={{ fontSize: '14px !important' }} /> : undefined}
+                      sx={{ fontWeight: 600, height: 24 }}
+                    />
+                  ))}
+                </Stack>
               </Box>
             )}
 
@@ -305,7 +343,20 @@ const MyRequestsPage: React.FC = () => {
             </Paper>
 
             <Stack direction="row" spacing={1} justifyContent="flex-end">
-              {['pending', 'contacted', 'viewed'].includes(inquiry.status) && (
+              {inquiry.status === 'awaiting_roommates' && 
+               inquiry.linkedRoommates?.some(r => r.user === (userData?._id || userData?.id) && !r.confirmed) && (
+                <Button 
+                  variant="contained"
+                  color="warning"
+                  onClick={() => handleConfirmInquiry(inquiry._id)}
+                  startIcon={<Check />}
+                  sx={{ borderRadius: 50, textTransform: 'none', fontWeight: 800 }}
+                >
+                  Join Group
+                </Button>
+              )}
+              {['pending', 'awaiting_roommates', 'contacted', 'viewed'].includes(inquiry.status) && 
+               inquiry.tenantId === (userData?._id || userData?.id) && (
                 <Button 
                   variant="outlined"
                   color="error"
@@ -371,9 +422,8 @@ const MyRequestsPage: React.FC = () => {
           </Tabs>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-        {loading ? (
+        {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress sx={{ color: COLORS.primary }} />
           </Box>

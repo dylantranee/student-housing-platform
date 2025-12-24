@@ -22,7 +22,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<any>({});
   const navigate = useNavigate();
@@ -54,9 +53,6 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!validate()) return;
     
-    setError('');
-    setSuccess('');
-    
     try {
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
@@ -77,7 +73,6 @@ export default function RegisterPage() {
         return;
       }
       
-      setSuccess('Account created successfully!');
       setOpenSnackbar(true);
       setFieldErrors({});
       

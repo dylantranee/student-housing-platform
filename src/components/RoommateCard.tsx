@@ -1,16 +1,26 @@
-import { Card, CardContent, CardMedia, Typography, Box, Chip, Button, Stack, Avatar } from '@mui/material';
-import { School, CalendarMonth, AttachMoney, AutoAwesome, NightsStay, VolumeUp, SmokingRooms } from '@mui/icons-material';
+import { Card, CardContent, Typography, Box, Chip, Button, Avatar } from '@mui/material';
+import { School, AutoAwesome, NightsStay, VolumeUp } from '@mui/icons-material';
 import type { RoommateProfile } from '../types/roommateProfile.types';
 
 interface RoommateCardProps {
   profile: RoommateProfile;
   onViewDetails: (profileId: string) => void;
   variant?: 'default' | 'compact';
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (profileId: string) => void;
 }
 
-const UPLOADS_BASE_URL = 'http://localhost:3000/uploads';
+import { UPLOADS_BASE_URL } from '../config/apiConfig';
 
-export const RoommateCard: React.FC<RoommateCardProps> = ({ profile, onViewDetails, variant = 'default' }) => {
+export const RoommateCard: React.FC<RoommateCardProps> = ({ 
+  profile, 
+  onViewDetails, 
+  variant = 'default',
+  selectable = false,
+  selected = false,
+  onToggleSelect
+}) => {
   const formatCurrency = (amount?: number) => {
     if (!amount) return 'N/A';
     return new Intl.NumberFormat('vi-VN', {
@@ -41,14 +51,23 @@ export const RoommateCard: React.FC<RoommateCardProps> = ({ profile, onViewDetai
     return (
       <Card 
         elevation={0}
-        onClick={() => onViewDetails(profile._id)}
+        onClick={(e) => {
+          if (selectable && onToggleSelect) {
+            e.stopPropagation();
+            onToggleSelect(profile._id);
+          } else {
+            onViewDetails(profile._id);
+          }
+        }}
         sx={{ 
           cursor: 'pointer',
           p: 2,
           borderRadius: 5,
-          border: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: '#ffffff',
+          border: '2px solid',
+          borderColor: selected ? '#FF5A5F' : 'rgba(0,0,0,0.06)',
+          bgcolor: selected ? '#FFF8F8' : '#ffffff',
           transition: 'all 0.3s ease',
+          position: 'relative',
           '&:hover': {
             borderColor: '#FF5A5F',
             boxShadow: '0 8px 24px rgba(255, 90, 95, 0.08)',
@@ -56,6 +75,25 @@ export const RoommateCard: React.FC<RoommateCardProps> = ({ profile, onViewDetai
           }
         }}
       >
+        {selected && (
+          <Box sx={{ 
+            position: 'absolute', 
+            top: 12, 
+            right: 12, 
+            zIndex: 10,
+            bgcolor: '#FF5A5F',
+            borderRadius: '50%',
+            width: 20,
+            height: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            boxShadow: '0 2px 6px rgba(255, 90, 95, 0.4)'
+          }}>
+            <AutoAwesome sx={{ fontSize: 14 }} />
+          </Box>
+        )}
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <Box sx={{ position: 'relative' }}>
             <Avatar

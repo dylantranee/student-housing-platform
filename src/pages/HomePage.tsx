@@ -1,66 +1,53 @@
-import { useEffect, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Box, Container, Grid, Typography, CircularProgress } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import Header from '../components/layout/Header';
 import { getProperties } from '../service/properties/getProperties.service';
-import type { Property } from '../service/properties/getProperties.service';
 import PropertyCard from '../components/common/PropertyCard';
 import SearchSection from '../components/common/SearchSection';
 import { COLORS } from '../theme/theme';
 
 export default function HomePage() {
-  // Data gốc từ API - KHÔNG BAO GIỜ thay đổi sau khi fetch
-  const [allProperties, setAllProperties] = useState<Property[]>([]);
-  
-  // Data hiển thị - sẽ thay đổi khi search/filter
-  const [properties, setProperties] = useState<Property[]>([]);
-  
-  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    location: '',
+    propertyType: '',
+    priceRange: { min: 0, max: 100000000 }
+  });
 
-  useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const data = await getProperties();
-        // Lưu vào cả 2: allProperties (gốc) và properties (hiển thị ban đầu)
-        setAllProperties(data);
-        setProperties(data);
-      } catch (error) {
-        console.error("Failed to load properties", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperties();
-  }, []);
+  const { data: allProperties = [], isLoading: loading } = useQuery({
+    queryKey: ['properties'],
+    queryFn: getProperties,
+  });
 
-  // Hàm xử lý search nhận từ SearchSection component
+  const properties = useMemo(() => {
+    let filtered = [...allProperties];
+
+    if (filters.location.trim()) {
+      filtered = filtered.filter(p => 
+        p.location.toLowerCase().includes(filters.location.toLowerCase())
+      );
+    }
+
+    if (filters.propertyType.trim()) {
+      filtered = filtered.filter(p => 
+        p.title.toLowerCase().includes(filters.propertyType.toLowerCase()) ||
+        p.description.toLowerCase().includes(filters.propertyType.toLowerCase())
+      );
+    }
+
+    filtered = filtered.filter(p => 
+      p.price >= filters.priceRange.min && p.price <= filters.priceRange.max
+    );
+
+    return filtered;
+  }, [allProperties, filters]);
+
   const handleSearch = (
     location: string, 
     propertyType: string, 
     priceRange: { min: number; max: number }
   ) => {
-    let filtered = [...allProperties];
-
-    // Filter by location (case-insensitive, partial match)
-    if (location.trim()) {
-      filtered = filtered.filter(p => 
-        p.location.toLowerCase().includes(location.toLowerCase())
-      );
-    }
-
-    // Filter by property type (giả sử có trong title hoặc description)
-    if (propertyType.trim()) {
-      filtered = filtered.filter(p => 
-        p.title.toLowerCase().includes(propertyType.toLowerCase()) ||
-        p.description.toLowerCase().includes(propertyType.toLowerCase())
-      );
-    }
-
-    // Filter by price range
-    filtered = filtered.filter(p => 
-      p.price >= priceRange.min && p.price <= priceRange.max
-    );
-
-    setProperties(filtered);
+    setFilters({ location, propertyType, priceRange });
   };
 
   return (
