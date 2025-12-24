@@ -50,28 +50,22 @@ export const getAcceptedConnections = async (): Promise<ConnectedRoommate[]> => 
     const acceptedConnections = requests.filter((req: any) => req.status === 'accepted');
     console.log('Accepted connections:', acceptedConnections);
     
-    // Map to extract the OTHER person's details (not the current user)
     const connections: ConnectedRoommate[] = acceptedConnections.map((req: any) => {
-      // Determine who is the OTHER person in the connection
-      // Handle both 'sender'/'receiver' and 'senderId'/'receiverId' field names
-      const sender = req.sender || req.senderId;
-      const receiver = req.receiver || req.receiverId;
-      let roommate;
+      // The backend returns populated senderId/receiverId
+      // In outgoing requests, receiverId is populated. In incoming, senderId is populated.
+      // We want the one that is NOT the current user.
       
-      if (sender && sender._id === currentUserId) {
-        // Current user is the sender, so the OTHER person is the receiver
-        roommate = receiver;
-      } else {
-        // Current user is the receiver, so the OTHER person is the sender  
-        roommate = sender;
-      }
+      const senderId = typeof req.senderId === 'object' ? req.senderId._id : req.senderId;
+      
+      const isSender = senderId.toString() === currentUserId.toString();
+      const roommate = isSender ? req.receiverId : req.senderId;
       
       console.log('Mapped roommate:', roommate);
       
       return {
-        _id: roommate._id,
-        name: roommate.name,
-        email: roommate.email
+        _id: typeof roommate === 'object' ? roommate._id : roommate,
+        name: roommate.name || 'Roommate',
+        email: roommate.email || ''
       };
     });
     

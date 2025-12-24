@@ -10,6 +10,7 @@ import {
     CircularProgress,
     IconButton,
     Avatar,
+    Chip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { 
@@ -61,7 +62,8 @@ const BathIcon = () => (
 export default function PropertyDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [mainImg, setMainImg] = useState<string>('');
+    const [mainImg, setMainImg] = useState<string | undefined>(undefined);
+    const [selectedRoommateIds, setSelectedRoommateIds] = useState<string[]>([]);
     const [selectedRoommate, setSelectedRoommate] = useState<RoommateProfile | null>(null);
     const [showRoommateModal, setShowRoommateModal] = useState(false);
     const [showContactModal, setShowContactModal] = useState(false);
@@ -85,7 +87,7 @@ export default function PropertyDetailPage() {
         return allRoommates
             .filter(r => (r.matchScore || 0) >= 40)
             .filter(r => (r.budgetMax || 0) >= (propertyPrice * 0.4))
-            .slice(0, 3);
+            .slice(0, 6);
     }, [property, allRoommates]);
 
     useEffect(() => {
@@ -133,6 +135,17 @@ export default function PropertyDetailPage() {
         setShowRoommateModal(true);
     };
 
+    const toggleRoommateSelection = (profile: RoommateProfile) => {
+        const userId = typeof profile.userId === 'object' ? (profile.userId as any)._id : profile.userId;
+        if (!userId) return;
+
+        setSelectedRoommateIds(prev => 
+            prev.includes(userId) 
+                ? prev.filter(id => id !== userId) 
+                : [...prev, userId]
+        );
+    };
+
     return (
         <Box sx={{ bgcolor: 'white', minHeight: '100vh' }}>
             <Header />
@@ -158,21 +171,25 @@ export default function PropertyDetailPage() {
                 <Grid container spacing={1} sx={{ borderRadius: 4, overflow: 'hidden', mb: 6 }}>
                     <Grid size={{ xs: 12, md: 8 }}>
                         <Box sx={{ height: 500, overflow: 'hidden' }}>
-                            <img 
-                                src={mainImg} 
-                                alt="Property" 
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                onError={() => handleImageError(0)}
-                            />
+                            {mainImg ? (
+                                <img 
+                                    src={mainImg || undefined} 
+                                    alt="Property" 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    onError={() => handleImageError(0)}
+                                />
+                            ) : (
+                                <Box sx={{ width: '100%', height: '100%', bgcolor: '#f5f5f5' }} />
+                            )}
                         </Box>
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
                         <Stack spacing={1} sx={{ height: 500 }}>
                             <Box sx={{ height: '50%', overflow: 'hidden' }}>
-                                <img src={images[1] || images[0]} alt="Property" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={images[1] || images[0] || FALLBACK_IMAGES[0]} alt="Property" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </Box>
                             <Box sx={{ height: '50%', overflow: 'hidden', position: 'relative' }}>
-                                <img src={images[2] || images[0]} alt="Property" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img src={images[2] || images[0] || FALLBACK_IMAGES[1]} alt="Property" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 <Button 
                                     sx={{ 
                                         position: 'absolute', bottom: 20, right: 20, 
@@ -360,6 +377,15 @@ export default function PropertyDetailPage() {
                                     }}>
                                         Potential Roommates
                                     </Typography>
+                                    {selectedRoommateIds.length > 0 && (
+                                        <Chip 
+                                            label={`${selectedRoommateIds.length} selected`} 
+                                            size="small" 
+                                            color="primary"
+                                            sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
+                                            onDelete={() => setSelectedRoommateIds([])}
+                                        />
+                                    )}
                                 </Box>
                                 
                                 <Typography variant="body2" sx={{ color: '#717171', fontSize: '0.85rem', mb: 2 }}>
@@ -373,6 +399,9 @@ export default function PropertyDetailPage() {
                                                 key={roommate._id}
                                                 profile={roommate}
                                                 variant="compact"
+                                                selectable={false}
+                                                selected={selectedRoommateIds.includes(typeof roommate.userId === 'object' ? (roommate.userId as any)._id : roommate.userId)}
+                                                onToggleSelect={() => toggleRoommateSelection(roommate)}
                                                 onViewDetails={() => handleRoommateClick(roommate)}
                                             />
                                         ))
@@ -436,12 +465,16 @@ export default function PropertyDetailPage() {
                 open={showRoommateModal}
                 onClose={() => setShowRoommateModal(false)}
                 contextPropertyUrl={window.location.href}
+                isSelected={selectedRoommate ? selectedRoommateIds.includes(typeof selectedRoommate.userId === 'object' ? (selectedRoommate.userId as any)._id : selectedRoommate.userId) : false}
+                onToggleSelect={selectedRoommate ? (() => toggleRoommateSelection(selectedRoommate)) : undefined}
             />
 
             <ContactOwnerModal
                 open={showContactModal}
                 onClose={() => setShowContactModal(false)}
                 property={property}
+                initialSelectedRoommateIds={selectedRoommateIds}
+                potentialRoommates={potentialRoommates}
                 onSuccess={() => {
                     // Optional: Show a success snackbar or refresh data
                     console.log('Inquiry submitted successfully!');

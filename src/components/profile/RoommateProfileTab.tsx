@@ -46,7 +46,7 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
     const [success, setSuccess] = useState<string>('');
     const [showOtherUniversity, setShowOtherUniversity] = useState(false);
     const [otherUniversity, setOtherUniversity] = useState('');
-    const [photoPreview, setPhotoPreview] = useState<string>('');
+    const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
     const [photoFile, setPhotoFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState({
@@ -227,8 +227,8 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                                 <Box>
                                     <input accept="image/*" style={{ display: 'none' }} id="photo-upload" type="file" onChange={handlePhotoChange} />
                                     <label htmlFor="photo-upload">
-                                        <Button variant="outlined" component="span" startIcon={<PhotoCamera />} sx={{ borderRadius: 50, textTransform: 'none', fontWeight: 700 }}>
-                                            Update Photo
+                                    <Button variant="outlined" component="span" startIcon={<PhotoCamera />} sx={{ borderRadius: 50, textTransform: 'none', fontWeight: 700 }}>
+                                            {photoPreview ? 'Update Photo' : 'Upload Photo'}
                                         </Button>
                                     </label>
                                 </Box>

@@ -15,7 +15,8 @@ import {
     MenuItem,
     FormControl,
     InputLabel,
-    FormHelperText
+    FormHelperText,
+    Chip
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -24,6 +25,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { Send, People, CheckCircle } from '@mui/icons-material';
 import { submitInquiry, checkExistingInquiry, type PropertyInquiry } from '../service/propertyInquiry.service';
 import type { Property } from '../service/properties/getProperties.service';
+import type { RoommateProfile } from '../types/roommateProfile.types';
 import { getProfile } from '../service/user/getProfile.service';
 import { getAcceptedConnections, type ConnectedRoommate } from '../service/roommate/connections.service';
 import { COLORS } from '../theme/theme';
@@ -32,10 +34,12 @@ interface ContactOwnerModalProps {
     open: boolean;
     onClose: () => void;
     property: Property | null;
+    initialSelectedRoommateIds?: string[];
+    potentialRoommates?: RoommateProfile[];
     onSuccess?: () => void;
 }
 
-export default function ContactOwnerModal({ open, onClose, property, onSuccess }: ContactOwnerModalProps) {
+export default function ContactOwnerModal({ open, onClose, property, initialSelectedRoommateIds = [], potentialRoommates = [], onSuccess }: ContactOwnerModalProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
@@ -47,7 +51,7 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
         message: '',
         moveInDate: null as Dayjs | null,
         phone: '',
-        selectedRoommateId: ''
+        selectedRoommateIds: [] as string[]
     });
     
     const [fieldErrors, setFieldErrors] = useState({
@@ -61,12 +65,16 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
             loadUserData();
             loadAcceptedRoommates();
             checkForExistingInquiry();
-            // Reset form when modal opens
+            
+            // Restore last selected roommates from localStorage
+            const savedRoommateIds = JSON.parse(localStorage.getItem('last_selected_roommate_ids') || '[]');
+            
+            // Reset form when modal opens, but persist roommate if available
             setFormData({
                 message: '',
                 moveInDate: null,
                 phone: '',
-                selectedRoommateId: ''
+                selectedRoommateIds: initialSelectedRoommateIds.length > 0 ? initialSelectedRoommateIds : savedRoommateIds
             });
             setFieldErrors({ message: '', moveInDate: '', phone: '' });
             setError('');
@@ -156,14 +164,14 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
                 message: formData.message.trim(),
                 moveInDate: formData.moveInDate!.toISOString(),
                 tenantPhone: formData.phone.trim(),
-                linkedRoommateId: formData.selectedRoommateId || undefined
+                linkedRoommateIds: formData.selectedRoommateIds.length > 0 ? formData.selectedRoommateIds : undefined
             });
 
             setSuccess(true);
             setTimeout(() => {
                 onSuccess?.();
                 onClose();
-            }, 2000);
+            }, 5000);
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || 'Failed to submit inquiry. Please try again.';
             setError(errorMessage);
@@ -205,10 +213,12 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
                             <Typography variant="body2" sx={{ mb: 1 }}>
                                 You contacted the owner on {dayjs(existingInquiry.createdAt).format('MMM D, YYYY')}
                             </Typography>
-                            {existingInquiry.linkedRoommateName && (
-                                <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'info.dark' }}>
-                                    With roommate: {existingInquiry.linkedRoommateName}
-                                </Typography>
+                            {existingInquiry.linkedRoommates && existingInquiry.linkedRoommates.length > 0 && (
+                                <Box sx={{ mt: 1 }}>
+                                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'info.dark' }}>
+                                        With roommates: {existingInquiry.linkedRoommates.map(r => r.name).join(', ')}
+                                    </Typography>
+                                </Box>
                             )}
                             <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
                                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
@@ -220,12 +230,14 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
                             </Box>
                         </Alert>
                     ) : success ? (
-                        <Alert severity="success" sx={{ borderRadius: 3, my: 2 }}>
+                        <Alert severity="success" icon={<CheckCircle />} sx={{ borderRadius: 3, my: 2 }}>
                             <Typography variant="body1" sx={{ fontWeight: 600 }}>
                                 🎉 Inquiry submitted successfully!
                             </Typography>
                             <Typography variant="body2">
-                                The property owner will contact you soon.
+                                {formData.selectedRoommateIds.length > 0 
+                                    ? "Your roommates have been notified. Once they all confirm, the property owner will receive your group inquiry."
+                                    : "The property owner will contact you soon."}
                             </Typography>
                         </Alert>
                     ) : (
@@ -287,26 +299,46 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
                             {connectedRoommates.length > 0 && (
                                 <Box>
                                     <FormControl fullWidth>
-                                        <InputLabel>Apply with a roommate (optional)</InputLabel>
+                                        <InputLabel>Apply with roommates (optional)</InputLabel>
                                         <Select
-                                            value={formData.selectedRoommateId}
-                                            onChange={(e) => setFormData({ ...formData, selectedRoommateId: e.target.value })}
-                                            label="Apply with a roommate (optional)"
+                                            multiple
+                                            value={formData.selectedRoommateIds}
+                                            onChange={(e) => {
+                                                const val = e.target.value as string[];
+                                                setFormData({ ...formData, selectedRoommateIds: val });
+                                                localStorage.setItem('last_selected_roommate_ids', JSON.stringify(val));
+                                            }}
+                                            label="Apply with roommates (optional)"
                                             startAdornment={<People sx={{ mr: 1, color: '#999' }} />}
+                                            renderValue={(selected) => (
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                                    {selected.map((id) => {
+                                                        const roommate = [...connectedRoommates, ...potentialRoommates.map(p => ({
+                                                            _id: typeof p.userId === 'object' ? (p.userId as any)._id : p.userId,
+                                                            name: (p.userId as any).name || 'Roommate',
+                                                            email: (p.userId as any).email || ''
+                                                        }))].find(r => r._id === id);
+                                                        return <Chip key={id} label={roommate?.name || 'User'} size="small" />;
+                                                    })}
+                                                </Box>
+                                            )}
                                         >
-                                            <MenuItem value="">
-                                                <em>Apply alone</em>
-                                            </MenuItem>
-                                            {connectedRoommates.map((roommate) => (
+                                            {[...connectedRoommates, ...potentialRoommates
+                                                .map(p => ({
+                                                    _id: typeof p.userId === 'object' ? (p.userId as any)._id : p.userId,
+                                                    name: (p.userId as any).name || 'Roommate'
+                                                }))
+                                                .filter(p => !connectedRoommates.some(c => c._id === p._id))
+                                            ].map((roommate) => (
                                                 <MenuItem key={roommate._id} value={roommate._id}>
                                                     {roommate.name}
                                                 </MenuItem>
                                             ))}
                                         </Select>
                                         <FormHelperText>
-                                            {formData.selectedRoommateId 
-                                                ? 'Your roommate will be notified and can confirm their interest' 
-                                                : 'Select a matched roommate to apply together'}
+                                            {formData.selectedRoommateIds.length > 0 
+                                                ? `${formData.selectedRoommateIds.length} roommates selected. They will be notified to confirm.` 
+                                                : 'Select matched roommates to apply as a group'}
                                         </FormHelperText>
                                     </FormControl>
                                 </Box>
@@ -347,36 +379,59 @@ export default function ContactOwnerModal({ open, onClose, property, onSuccess }
                         >
                             Close
                         </Button>
-                    ) : !success && (
+                    ) : (
                         <>
-                            <Button 
-                                onClick={onClose}
-                                sx={{ 
-                                    borderRadius: 50, 
-                                    textTransform: 'none', 
-                                    fontWeight: 700,
-                                    px: 3 
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleSubmit}
-                                variant="contained"
-                                disabled={loading}
-                                startIcon={loading ? <CircularProgress size={20} /> : <Send />}
-                                sx={{
-                                    bgcolor: COLORS.primary,
-                                    '&:hover': { bgcolor: COLORS.primaryHover },
-                                    borderRadius: 50,
-                                    textTransform: 'none',
-                                    fontWeight: 800,
-                                    px: 4,
-                                    boxShadow: 'none'
-                                }}
-                            >
-                                {loading ? 'Sending...' : 'Send Inquiry'}
-                            </Button>
+                            {!success ? (
+                                <>
+                                    <Button 
+                                        onClick={onClose}
+                                        sx={{ 
+                                            borderRadius: 50, 
+                                            textTransform: 'none', 
+                                            fontWeight: 700,
+                                            px: 3 
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={handleSubmit}
+                                        variant="contained"
+                                        disabled={loading}
+                                        startIcon={loading ? <CircularProgress size={20} /> : <Send />}
+                                        sx={{
+                                            bgcolor: COLORS.primary,
+                                            '&:hover': { bgcolor: COLORS.primaryHover },
+                                            borderRadius: 50,
+                                            textTransform: 'none',
+                                            fontWeight: 800,
+                                            px: 4,
+                                            boxShadow: 'none'
+                                        }}
+                                    >
+                                        {loading ? 'Sending...' : 'Send Inquiry'}
+                                    </Button>
+                                </>
+                            ) : (
+                                <Button
+                                    onClick={() => {
+                                        onSuccess?.();
+                                        onClose();
+                                    }}
+                                    variant="contained"
+                                    sx={{
+                                        bgcolor: COLORS.primary,
+                                        '&:hover': { bgcolor: COLORS.primaryHover },
+                                        borderRadius: 50,
+                                        textTransform: 'none',
+                                        fontWeight: 800,
+                                        px: 4,
+                                        boxShadow: 'none'
+                                    }}
+                                >
+                                    Got it!
+                                </Button>
+                            )}
                         </>
                     )}
                 </DialogActions>

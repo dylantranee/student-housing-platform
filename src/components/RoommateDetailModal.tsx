@@ -13,7 +13,7 @@ import {
   LinearProgress,
   Tooltip,
 } from '@mui/material';
-import { Close, School } from '@mui/icons-material';
+import { Close, School, People } from '@mui/icons-material';
 import { IconButton, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import type { RoommateProfile } from '../types/roommateProfile.types';
@@ -24,6 +24,8 @@ interface RoommateDetailModalProps {
   open: boolean;
   onClose: () => void;
   contextPropertyUrl?: string;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 
 import { UPLOADS_BASE_URL } from '../config/apiConfig';
@@ -33,6 +35,8 @@ export const RoommateDetailModal: React.FC<RoommateDetailModalProps> = ({
   open,
   onClose,
   contextPropertyUrl,
+  isSelected = false,
+  onToggleSelect,
 }) => {
   const navigate = useNavigate();
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -308,47 +312,17 @@ export const RoommateDetailModal: React.FC<RoommateDetailModalProps> = ({
 
       <DialogActions sx={{ p: 4, borderTop: '1px solid #f0f0f0', justifyContent: 'center', gap: 2 }}>
         <Button onClick={onClose} sx={{ color: '#717171', fontWeight: 700, px: 3 }}>Close</Button>
-        {(requestSent || profile.connectionStatus === 'pending') ? (
+        
+        {onToggleSelect ? (
           <Button 
               variant="contained" 
-              disabled
-              sx={{ 
-                  bgcolor: '#f5f5f5 !important', 
-                  color: '#999 !important', 
-                  borderRadius: 50, 
-                  px: 6, 
-                  py: 1.5,
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  boxShadow: 'none'
+              onClick={() => {
+                onToggleSelect();
+                onClose();
               }}
-          >
-            Request Sent
-          </Button>
-        ) : profile.connectionStatus === 'accepted' ? (
-          <Button 
-              variant="contained"
-              onClick={() => navigate('/requests')}
+              startIcon={<People />}
               sx={{ 
-                  bgcolor: '#4CAF50 !important', 
-                  color: 'white !important',
-                  borderRadius: 50, 
-                  px: 6, 
-                  py: 1.5, 
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  boxShadow: 'none',
-                  '&:hover': { bgcolor: '#45a049 !important' }
-              }}
-          >
-            Message
-          </Button>
-        ) : (
-          <Button 
-              variant="contained" 
-              onClick={() => setSendModalOpen(true)}
-              sx={{ 
-                  bgcolor: '#FF5A5F !important', 
+                  bgcolor: isSelected ? '#717171 !important' : '#FF5A5F !important', 
                   color: 'white !important', 
                   borderRadius: 50, 
                   px: 6, 
@@ -356,11 +330,68 @@ export const RoommateDetailModal: React.FC<RoommateDetailModalProps> = ({
                   fontWeight: 800,
                   textTransform: 'none',
                   boxShadow: 'none',
-                  '&:hover': { bgcolor: '#E14850 !important' }
+                  '&:hover': { bgcolor: isSelected ? '#484848 !important' : '#E14850 !important' }
               }}
           >
-            Say Hello
+            {isSelected ? 'Remove from Inquiry' : 'Add to Inquiry'}
           </Button>
+        ) : (
+          <>
+            {(requestSent || profile.connectionStatus === 'pending') ? (
+              <Button 
+                  variant="contained" 
+                  disabled
+                  sx={{ 
+                      bgcolor: '#f5f5f5 !important', 
+                      color: '#999 !important', 
+                      borderRadius: 50, 
+                      px: 6, 
+                      py: 1.5,
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      boxShadow: 'none'
+                  }}
+              >
+                Request Sent
+              </Button>
+            ) : profile.connectionStatus === 'accepted' ? (
+              <Button 
+                  variant="contained"
+                  onClick={() => navigate('/requests?tab=2')}
+                  sx={{ 
+                      bgcolor: '#4CAF50 !important', 
+                      color: 'white !important',
+                      borderRadius: 50, 
+                      px: 6, 
+                      py: 1.5, 
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      boxShadow: 'none',
+                      '&:hover': { bgcolor: '#45a049 !important' }
+                  }}
+              >
+                Message
+              </Button>
+            ) : (
+              <Button 
+                  variant="contained" 
+                  onClick={() => setSendModalOpen(true)}
+                  sx={{ 
+                      bgcolor: '#FF5A5F !important', 
+                      color: 'white !important', 
+                      borderRadius: 50, 
+                      px: 6, 
+                      py: 1.5,
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      boxShadow: 'none',
+                      '&:hover': { bgcolor: '#E14850 !important' }
+                  }}
+              >
+                Say Hello
+              </Button>
+            )}
+          </>
         )}
       </DialogActions>
 
