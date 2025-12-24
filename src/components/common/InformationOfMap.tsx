@@ -120,7 +120,11 @@ export default function InformationOfMap({
         alignItems: 'flex-start',
         flexShrink: 0,
         mr: 3      }}>
-        {priceStats && (
+        {properties.length === 1 || properties.length === 0 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', color: '#888' }}>
+            Not Enough Data to Calculate
+          </Typography>
+        ) : priceStats && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Chip 
               label={`Avg Price: $${priceStats.avgPrice.toLocaleString()}/mo`}
