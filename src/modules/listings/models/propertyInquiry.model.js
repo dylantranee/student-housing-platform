@@ -34,34 +34,25 @@ const PropertyInquirySchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'contacted', 'viewed', 'rejected', 'withdrawn'],
+        enum: ['pending', 'awaiting_roommates', 'contacted', 'viewed', 'rejected', 'withdrawn'],
         default: 'pending'
     },
-    // Linked roommate support for joint applications
-    linkedRoommateId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    linkedRoommateName: {
-        type: String,
-        default: null
-    },
-    linkedRoommateEmail: {
-        type: String,
-        default: null
-    },
-    linkedRoommatePhone: {
-        type: String,
-        default: null
-    },
-    linkedRoommateConfirmed: {
-        type: Boolean,
-        default: false
-    }
+    linkedRoommates: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        name: String,
+        email: String,
+        phone: String,
+        confirmed: {
+            type: Boolean,
+            default: false
+        }
+    }]
 }, { timestamps: true });
 
-// Index for efficient querying
 PropertyInquirySchema.index({ propertyId: 1, createdAt: -1 });
 PropertyInquirySchema.index({ tenantId: 1, createdAt: -1 });
 

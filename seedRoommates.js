@@ -1,14 +1,17 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const User = require('./models/User');
-const RoommateProfile = require('./models/RoommateProfile');
+const User = require('./src/modules/users/models/user.model');
+const RoommateProfile = require('./src/modules/roommates/models/roommateProfile.model');
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/houplatform';
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/houplatform', {
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
+.then(() => console.log(`Connected to MongoDB at ${MONGODB_URI}`))
 .catch(err => console.error('MongoDB connection error:', err));
 
 const dummyRoommates = [

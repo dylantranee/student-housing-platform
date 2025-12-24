@@ -1,31 +1,6 @@
-exports.updateProfile = async (req, res) => {
-  const userId = req.user._id || req.user.id;
-  const { name, age, phone } = req.body;
-  if (!name && !age && !phone) {
-    return res.status(400).json({ error: "No fields to update" });
-  }
-  try {
-    const update = {};
-    if (name) update.name = name;
-    if (age) update.age = age;
-    if (phone) update.phone = phone;
-    const user = await require("../models/User").findByIdAndUpdate(
-      userId,
-      { $set: update },
-      { new: true, runValidators: true }
-    ).select("-password");
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ data: user });
-  } catch (error) {
-    if (error.code === 11000 && error.keyPattern && error.keyPattern.phone) {
-      return res.status(409).json({ error: "Phone number already exists" });
-    }
-    console.error("Error updating profile:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-};
 const bcrypt = require("bcrypt");
-const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const User = require("../../users/models/user.model");
 
 exports.register = async (req, res) => {
   const { name, age, phone, email, password } = req.body;
@@ -44,7 +19,6 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-const jwt = require("jsonwebtoken");
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
@@ -78,7 +52,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
 exports.profile = (req, res) => {
   const userId = req.user.id;
   if (!userId) return res.status(400).json({ error: "Invalid token" });
@@ -92,4 +65,31 @@ exports.profile = (req, res) => {
       console.error("Error fetching profile:", err);
       res.status(500).json({ error: "Server error" });
     });
+};
+
+exports.updateProfile = async (req, res) => {
+  const userId = req.user._id || req.user.id;
+  const { name, age, phone } = req.body;
+  if (!name && !age && !phone) {
+    return res.status(400).json({ error: "No fields to update" });
+  }
+  try {
+    const update = {};
+    if (name) update.name = name;
+    if (age) update.age = age;
+    if (phone) update.phone = phone;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: update },
+      { new: true, runValidators: true }
+    ).select("-password");
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({ data: user });
+  } catch (error) {
+    if (error.code === 11000 && error.keyPattern && error.keyPattern.phone) {
+      return res.status(409).json({ error: "Phone number already exists" });
+    }
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 };

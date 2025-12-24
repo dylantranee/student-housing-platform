@@ -26,7 +26,6 @@ const MatchRequestSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Prevent duplicate pending requests between the same users
 MatchRequestSchema.index({ senderId: 1, receiverId: 1, status: 1 }, { 
   unique: true, 
   partialFilterExpression: { status: 'pending' } 
