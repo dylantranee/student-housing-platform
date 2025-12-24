@@ -4,7 +4,7 @@ mongoose.connect('mongodb://localhost:27017/houplatform')
   .then(async () => {
     console.log('=== IMAGE AUDIT REPORT ===\n');
     
-    const HouseDetail = require('./models/HouseDetail');
+    const HouseDetail = require('./src/modules/listings/models/houseDetail.model');
     
     // Count houses with and without images
     const totalHouses = await HouseDetail.countDocuments();

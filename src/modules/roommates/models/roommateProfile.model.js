@@ -31,7 +31,7 @@ const RoommateProfileSchema = new mongoose.Schema({
 	cleanliness: { 
 		type: Number, 
 		min: 1, 
-		max: 5  // Support both old (1-5) and new (1-3) data
+		max: 5
 	},
 	noiseTolerance: { 
 		type: String, 
@@ -76,7 +76,6 @@ const RoommateProfileSchema = new mongoose.Schema({
 	},
 }, { timestamps: true });
 
-// Virtual field to check if profile is complete
 RoommateProfileSchema.virtual('isComplete').get(function() {
 	return !!(
 		this.bio && 
@@ -88,7 +87,6 @@ RoommateProfileSchema.virtual('isComplete').get(function() {
 	);
 });
 
-// Ensure virtuals are included when converting to JSON
 RoommateProfileSchema.set('toJSON', { virtuals: true });
 RoommateProfileSchema.set('toObject', { virtuals: true });
 

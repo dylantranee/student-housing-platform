@@ -1,13 +1,11 @@
-const MatchRequest = require('../models/MatchRequest');
-const RoommateProfile = require('../models/RoommateProfile');
+const MatchRequest = require('../models/matchRequest.model');
+const RoommateProfile = require('../models/roommateProfile.model');
 
-// Send a connection request
 exports.sendRequest = async (req, res) => {
   try {
     const senderId = req.user._id || req.user.id;
     const { receiverId, message, propertyLink } = req.body;
 
-    // 1. Basic Validations
     if (!receiverId || !message) {
       return res.status(400).json({ message: 'Receiver and message are required' });
     }
@@ -16,13 +14,11 @@ exports.sendRequest = async (req, res) => {
       return res.status(400).json({ message: 'You cannot send a request to yourself' });
     }
 
-    // 2. Check if receiver exists
     const receiverProfile = await RoommateProfile.findOne({ userId: receiverId });
     if (!receiverProfile) {
       return res.status(404).json({ message: 'Receiver profile not found' });
     }
 
-    // 3. Prevent Duplicates (Pending or Accepted)
     const existingRequest = await MatchRequest.findOne({
       senderId,
       receiverId,
@@ -37,7 +33,6 @@ exports.sendRequest = async (req, res) => {
       });
     }
 
-    // 4. Enforce Daily Limit (10 requests)
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -50,7 +45,6 @@ exports.sendRequest = async (req, res) => {
       return res.status(429).json({ message: 'Daily limit of 10 requests reached. Please try again tomorrow.' });
     }
 
-    // 5. Create Request
     const matchRequest = new MatchRequest({
       senderId,
       receiverId,
@@ -72,7 +66,6 @@ exports.sendRequest = async (req, res) => {
   }
 };
 
-// Cancel a sent request
 exports.cancelRequest = async (req, res) => {
   try {
     const senderId = req.user._id || req.user.id;
@@ -90,31 +83,22 @@ exports.cancelRequest = async (req, res) => {
 
     res.json({ message: 'Request cancelled successfully', data: matchRequest });
   } catch (error) {
-    console.error('Error cancelling match request:', error);
     res.status(500).json({ message: 'Failed to cancel request', error: error.message });
   }
 };
 
-// Get current user's requests (both incoming and outgoing)
 exports.getMyRequests = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
 
-    // Fetch outgoing requests
     const outgoing = await MatchRequest.find({ senderId: userId })
       .populate('receiverId', 'name email')
       .sort({ createdAt: -1 });
 
-    // Fetch incoming requests
     const incoming = await MatchRequest.find({ receiverId: userId })
       .populate('senderId', 'name email')
       .sort({ createdAt: -1 });
 
-    // For better UI, we should also get the profile photos
-    // We'll map through them and fetch roommate profile info if needed
-    // OR just return as is for now and let frontend handle it if they have the IDs
-    
-    // Actually, let's fetch profiles to include photos
     const senderIds = incoming.map(r => r.senderId._id);
     const receiverIds = outgoing.map(r => r.receiverId._id);
     
@@ -145,17 +129,15 @@ exports.getMyRequests = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching requests:', error);
     res.status(500).json({ message: 'Failed to fetch match requests', error: error.message });
   }
 };
 
-// Accept or decline a request
 exports.respondToRequest = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
     const { requestId } = req.params;
-    const { status } = req.body; // 'accepted' or 'declined'
+    const { status } = req.body;
 
     if (!['accepted', 'declined'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status. Must be accepted or declined.' });
@@ -171,13 +153,9 @@ exports.respondToRequest = async (req, res) => {
       return res.status(404).json({ message: 'Pending request not found' });
     }
 
-    res.json({ 
-      message: `Request ${status} successfully`, 
-      data: matchRequest 
-    });
+    res.json({ message: `Request ${status} successfully`, data: matchRequest });
 
   } catch (error) {
-    console.error('Error responding to request:', error);
     res.status(500).json({ message: 'Failed to respond to request', error: error.message });
   }
 };

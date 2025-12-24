@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const authController = require("../controllers/authController");
-const authenticate = require("../middleware/auth");
-
+const authController = require("../controllers/auth.controller");
+const authenticate = require("../../../../middleware/auth");
 
 // POST /register
 router.post("/register", authController.register);
@@ -12,7 +11,8 @@ router.post("/login", authController.login);
 
 // GET /profile (protected)
 router.get("/profile", authenticate, authController.profile);
-// PATCH /api/auth/profile
+
+// PATCH /profile (protected)
 router.patch("/profile", authenticate, authController.updateProfile);
 
 module.exports = router;

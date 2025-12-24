@@ -1,13 +1,7 @@
-const HouseDetail = require('../models/HouseDetail');
+const HouseDetail = require('../models/houseDetail.model');
 
-// For image upload, multer will handle req.files or req.file
 exports.addHouseDetail = async (req, res) => {
   try {
-    console.log('POST /api/houseDetail body:', req.body);
-    if (req.file) console.log('Uploaded file:', req.file);
-    if (req.files) console.log('Uploaded files:', req.files);
-
-    // Map các trường từ frontend sang backend
     const title = req.body.title || req.body.name;
     const location = req.body.location || req.body.address;
     const price = req.body.price;
@@ -24,7 +18,6 @@ exports.addHouseDetail = async (req, res) => {
     } else if (req.file) {
       images = [req.file.filename];
     } else if (req.body.images) {
-      // If images is sent as array of URLs/filenames
       images = Array.isArray(req.body.images) ? req.body.images : [req.body.images];
     }
 
@@ -47,11 +40,9 @@ exports.addHouseDetail = async (req, res) => {
   }
 };
 
-// Update house detail
 exports.updateHouseDetail = async (req, res) => {
   try {
     const updateData = { ...req.body };
-    // Handle image upload
     let images = [];
     if (req.files && req.files.length > 0) {
       images = req.files.map(file => file.filename);
@@ -73,7 +64,6 @@ exports.updateHouseDetail = async (req, res) => {
   }
 };
 
-// Get all house details
 exports.getAllHouseDetails = async (req, res) => {
   try {
     const houses = await HouseDetail.find();
@@ -83,7 +73,6 @@ exports.getAllHouseDetails = async (req, res) => {
   }
 };
 
-// Get house detail by ID
 exports.getHouseDetailById = async (req, res) => {
   try {
     const house = await HouseDetail.findById(req.params.id);

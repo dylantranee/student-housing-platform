@@ -35,11 +35,11 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
-const authRoutes = require("./routes/auth");
-const houseDetailRoutes = require("./routes/houseDetail");
-const roommateProfileRoutes = require("./routes/roommateProfile.routes");
-const matchRequestRoutes = require("./routes/matchRequest.routes");
-const propertyInquiryRoutes = require("./routes/propertyInquiry.routes");
+const authRoutes = require("./src/modules/auth/routes/auth.routes");
+const houseDetailRoutes = require("./src/modules/listings/routes/houseDetail.routes");
+const roommateProfileRoutes = require("./src/modules/roommates/routes/roommateProfile.routes");
+const matchRequestRoutes = require("./src/modules/roommates/routes/matchRequest.routes");
+const propertyInquiryRoutes = require("./src/modules/listings/routes/propertyInquiry.routes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/houseDetail", houseDetailRoutes);

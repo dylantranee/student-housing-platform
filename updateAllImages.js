@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const HouseDetail = require('./models/HouseDetail');
+const HouseDetail = require('./src/modules/listings/models/houseDetail.model');
 
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/houplatform', {

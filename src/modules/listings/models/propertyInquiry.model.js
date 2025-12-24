@@ -37,7 +37,6 @@ const PropertyInquirySchema = new mongoose.Schema({
         enum: ['pending', 'contacted', 'viewed', 'rejected', 'withdrawn'],
         default: 'pending'
     },
-    // Linked roommate support for joint applications
     linkedRoommateId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -61,7 +60,6 @@ const PropertyInquirySchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Index for efficient querying
 PropertyInquirySchema.index({ propertyId: 1, createdAt: -1 });
 PropertyInquirySchema.index({ tenantId: 1, createdAt: -1 });
 

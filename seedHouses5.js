@@ -1,12 +1,15 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
-const HouseDetail = require('./models/HouseDetail');
+const HouseDetail = require('./src/modules/listings/models/houseDetail.model');
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/houplatform';
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/houplatform', {
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('Connected to MongoDB'))
+.then(() => console.log(`Connected to MongoDB at ${MONGODB_URI}`))
 .catch(err => console.error('MongoDB connection error:', err));
 
 const houses = [
