@@ -5,6 +5,10 @@ const mongoose = require("mongoose");
 
 dotenv.config();
 
+// Initialize Observers/Listeners (Observer Pattern)
+const { initNotificationListeners } = require('./src/common/events/listeners');
+initNotificationListeners();
+
 console.log('JWT_SECRET loaded:', process.env.JWT_SECRET ? 'Yes (starts with ' + process.env.JWT_SECRET.substring(0, 5) + '...)' : 'No');
 
 // Auth0 JWT validation
@@ -40,12 +44,14 @@ const houseDetailRoutes = require("./src/modules/listings/routes/houseDetail.rou
 const roommateProfileRoutes = require("./src/modules/roommates/routes/roommateProfile.routes");
 const matchRequestRoutes = require("./src/modules/roommates/routes/matchRequest.routes");
 const propertyInquiryRoutes = require("./src/modules/listings/routes/propertyInquiry.routes");
+const notificationRoutes = require("./src/common/routes/notification.routes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/houseDetail", houseDetailRoutes);
 app.use("/api/roommate-profile", roommateProfileRoutes);
 app.use("/api/match-requests", matchRequestRoutes);
 app.use("/api/property-inquiries", propertyInquiryRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Serve uploaded images statically
 const path = require('path');

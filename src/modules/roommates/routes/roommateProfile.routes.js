@@ -5,10 +5,11 @@ const auth = require("../../../../middleware/auth");
 const upload = require("../../../../middleware/upload");
 
 router.get('/browse', auth, roommateProfileController.browseRoommates);
-router.post('/', roommateProfileController.createProfile);
+router.post('/', auth, roommateProfileController.createProfile);
 router.get('/:userId', roommateProfileController.getProfile);
-router.put('/:id', roommateProfileController.updateProfile);
-router.delete('/:id', roommateProfileController.deleteProfile);
-router.post('/:id/photo', upload.single('photo'), roommateProfileController.uploadPhoto);
+router.get('/user/:userId', auth, roommateProfileController.getProfile);
+router.patch('/:id', auth, roommateProfileController.updateProfile);
+router.delete('/:id', auth, roommateProfileController.deleteProfile);
+router.post('/:id/photo', auth, upload.single('photo'), roommateProfileController.uploadPhoto);
 
 module.exports = router;

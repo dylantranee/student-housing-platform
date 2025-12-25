@@ -1,7 +1,7 @@
 const PropertyInquiry = require('../models/propertyInquiry.model');
 const HouseDetail = require('../models/houseDetail.model');
 const User = require('../../users/models/user.model');
-const MatchRequest = require('../../roommates/models/matchRequest.model'); // Fixed path
+const { eventBus, EVENTS } = require('../../../common/events/eventBus');
 
 exports.createInquiry = async (req, res) => {
     try {
@@ -44,9 +44,6 @@ exports.createInquiry = async (req, res) => {
         let linkedRoommates = [];
         if (linkedRoommateIds && Array.isArray(linkedRoommateIds) && linkedRoommateIds.length > 0) {
             for (const roommateId of linkedRoommateIds) {
-                // Removed connection check: any roommate can be invited to an inquiry group.
-                // The invited roommates will need to confirm the request on their dashboard.
-
                 const roommate = await User.findById(roommateId).select('name email phone');
                 if (!roommate) {
                     return res.status(404).json({ message: `Roommate with ID ${roommateId} not found` });
@@ -75,6 +72,20 @@ exports.createInquiry = async (req, res) => {
         });
 
         await inquiry.save();
+
+        console.log(`[Backend] Inquiry saved: ${inquiry._id}. Linked Roommates: ${inquiry.linkedRoommates.length}`);
+        inquiry.linkedRoommates.forEach((rm, i) => {
+            console.log(`  - Roommate ${i}: ${rm.name} (ID: ${rm.user})`);
+        });
+
+        // --- Observer Pattern: Emit Event ---
+        eventBus.emit(EVENTS.INQUIRY_CREATED, {
+            inquiry,
+            property,
+            tenantName
+        });
+        // ------------------------------------
+
         res.status(201).json({ message: 'Inquiry submitted successfully', inquiry });
     } catch (error) {
         console.error('Error creating property inquiry:', error);

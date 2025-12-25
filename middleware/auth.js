@@ -9,7 +9,7 @@ module.exports = async function (req, res, next) {
   }
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production');
     req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) {
       console.log('Auth middleware: User not found for id', decoded.id);

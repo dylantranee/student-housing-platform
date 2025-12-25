@@ -78,12 +78,8 @@ const RoommateProfileSchema = new mongoose.Schema({
 
 RoommateProfileSchema.virtual('isComplete').get(function() {
 	return !!(
-		this.bio && 
-		this.studyProgram && 
 		this.university && 
-		this.moveInDate && 
-		this.budgetMin !== undefined && 
-		this.budgetMax !== undefined
+		this.moveInDate
 	);
 });
 

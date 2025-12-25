@@ -1,5 +1,6 @@
 const MatchRequest = require('../models/matchRequest.model');
 const RoommateProfile = require('../models/roommateProfile.model');
+const { eventBus, EVENTS } = require('../../../common/events/eventBus');
 
 exports.sendRequest = async (req, res) => {
   try {
@@ -55,6 +56,13 @@ exports.sendRequest = async (req, res) => {
 
     await matchRequest.save();
 
+    // --- Observer Pattern: Emit Event ---
+    eventBus.emit(EVENTS.MATCH_REQUEST_SENT, {
+      matchRequest,
+      senderName: req.user.name
+    });
+    // ------------------------------------
+
     res.status(201).json({
       message: 'Connection request sent successfully',
       data: matchRequest
@@ -99,19 +107,31 @@ exports.getMyRequests = async (req, res) => {
       .populate('senderId', 'name email')
       .sort({ createdAt: -1 });
 
-    const senderIds = incoming.map(r => r.senderId._id);
-    const receiverIds = outgoing.map(r => r.receiverId._id);
+    // Filter out requests where population failed (e.g. user deleted)
+    const validOutgoing = outgoing.filter(r => r.receiverId);
+    const validIncoming = incoming.filter(r => r.senderId);
+
+    const senderIds = validIncoming.map(r => r.senderId._id);
+    const receiverIds = validOutgoing.map(r => r.receiverId._id);
     
     const profiles = await RoommateProfile.find({
       userId: { $in: [...senderIds, ...receiverIds] }
     }).select('userId profilePhoto university');
 
     const profileMap = new Map();
-    profiles.forEach(p => profileMap.set(p.userId.toString(), p));
+    profiles.forEach(p => {
+      if (p.userId) {
+        profileMap.set(p.userId.toString(), p);
+      }
+    });
 
     const processRequest = (req, otherUserField) => {
       const rObj = req.toObject();
-      const otherUserId = rObj[otherUserField]._id.toString();
+      const otherUser = rObj[otherUserField];
+      
+      if (!otherUser) return null;
+      
+      const otherUserId = otherUser._id.toString();
       const profile = profileMap.get(otherUserId);
       
       return {
@@ -124,8 +144,8 @@ exports.getMyRequests = async (req, res) => {
     };
 
     res.json({
-      outgoing: outgoing.map(r => processRequest(r, 'receiverId')),
-      incoming: incoming.map(r => processRequest(r, 'senderId'))
+      outgoing: validOutgoing.map(r => processRequest(r, 'receiverId')).filter(Boolean),
+      incoming: validIncoming.map(r => processRequest(r, 'senderId')).filter(Boolean)
     });
 
   } catch (error) {
@@ -147,11 +167,20 @@ exports.respondToRequest = async (req, res) => {
       { _id: requestId, receiverId: userId, status: 'pending' },
       { status },
       { new: true }
-    );
+    ).populate('senderId', 'name email');
 
     if (!matchRequest) {
       return res.status(404).json({ message: 'Pending request not found' });
     }
+
+    // --- Observer Pattern: Emit Event if Accepted ---
+    if (status === 'accepted') {
+      eventBus.emit(EVENTS.MATCH_REQUEST_ACCEPTED, {
+        matchRequest,
+        responderName: req.user.name
+      });
+    }
+    // ------------------------------------------------
 
     res.json({ message: `Request ${status} successfully`, data: matchRequest });
 
