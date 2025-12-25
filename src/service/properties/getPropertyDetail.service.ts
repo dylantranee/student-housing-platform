@@ -1,15 +1,8 @@
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiConfig";
+import { request } from "../../util/request";
 import type { Property } from "./getProperties.service";
 
-const API_URL = `${API_BASE_URL}/houseDetail`;
+const API_URL = "/api/houseDetail";
 
 export const getPropertyDetail = async (id: string): Promise<Property> => {
-  try {
-    const response = await axios.get(`${API_URL}/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching property detail for ID ${id}:`, error);
-    throw error;
-  }
+  return request<Property>(`${API_URL}/${id}`);
 };

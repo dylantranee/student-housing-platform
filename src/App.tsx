@@ -14,34 +14,38 @@ import MyRequestsPage from './pages/MyRequestsPage';
 import ScrollToTop from './components/common/ScrollToTop';
 
 
+import { NotificationProvider } from './context/NotificationContext';
+
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/profile" element={
-          <PrivateRoute>
-            <ProfilePage />
-          </PrivateRoute>
-        } />
-        <Route path="/requests" element={
-          <PrivateRoute>
-            <MyRequestsPage />
-          </PrivateRoute>
-        } />
-        <Route path="/roommates/browse" element={
-          <PrivateRoute>
-            <BrowseRoommatesPage />
-          </PrivateRoute>
-        } />
-        <Route path="/compare-prices" element={<ComparePricesPage />} />
-        <Route path="/add-rental-property" element={<AddRentalPropertyPage />} />
-        <Route path="/property/:id" element={<PropertyDetailPage />} />
-      </Routes>
-    </BrowserRouter>
+    <NotificationProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <ProfilePage />
+            </PrivateRoute>
+          } />
+          <Route path="/requests" element={
+            <PrivateRoute>
+              <MyRequestsPage />
+            </PrivateRoute>
+          } />
+          <Route path="/roommates/browse" element={
+            <PrivateRoute>
+              <BrowseRoommatesPage />
+            </PrivateRoute>
+          } />
+          <Route path="/compare-prices" element={<ComparePricesPage />} />
+          <Route path="/add-rental-property" element={<AddRentalPropertyPage />} />
+          <Route path="/property/:id" element={<PropertyDetailPage />} />
+        </Routes>
+      </BrowserRouter>
+    </NotificationProvider>
   );
 }
 

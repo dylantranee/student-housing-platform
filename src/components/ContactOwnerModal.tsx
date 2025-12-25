@@ -29,6 +29,7 @@ import type { RoommateProfile } from '../types/roommateProfile.types';
 import { getProfile } from '../service/user/getProfile.service';
 import { getAcceptedConnections, type ConnectedRoommate } from '../service/roommate/connections.service';
 import { COLORS } from '../theme/theme';
+import { useNotification } from '../context/NotificationContext';
 
 interface ContactOwnerModalProps {
     open: boolean;
@@ -152,6 +153,8 @@ export default function ContactOwnerModal({ open, onClose, property, initialSele
         return isValid;
     };
 
+    const { addNotification } = useNotification();
+
     const handleSubmit = async () => {
         if (!validate() || !property) return;
 
@@ -166,6 +169,13 @@ export default function ContactOwnerModal({ open, onClose, property, initialSele
                 tenantPhone: formData.phone.trim(),
                 linkedRoommateIds: formData.selectedRoommateIds.length > 0 ? formData.selectedRoommateIds : undefined
             });
+
+            // --- Global Notification ---
+            addNotification(
+                'Inquiry Sent!',
+                `Your inquiry for ${property.title} has been submitted successfully.`,
+                'success'
+            );
 
             setSuccess(true);
             setTimeout(() => {
@@ -296,7 +306,7 @@ export default function ContactOwnerModal({ open, onClose, property, initialSele
                                 />
                             </Box>
 
-                            {connectedRoommates.length > 0 && (
+                            {(connectedRoommates.length > 0 || formData.selectedRoommateIds.length > 0) && (
                                 <Box>
                                     <FormControl fullWidth>
                                         <InputLabel>Apply with roommates (optional)</InputLabel>
@@ -313,27 +323,39 @@ export default function ContactOwnerModal({ open, onClose, property, initialSele
                                             renderValue={(selected) => (
                                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                                     {selected.map((id) => {
-                                                        const roommate = [...connectedRoommates, ...potentialRoommates.map(p => ({
+                                                        const resolvedPotential = potentialRoommates?.map(p => ({
                                                             _id: typeof p.userId === 'object' ? (p.userId as any)._id : p.userId,
                                                             name: (p.userId as any).name || 'Roommate',
                                                             email: (p.userId as any).email || ''
-                                                        }))].find(r => r._id === id);
-                                                        return <Chip key={id} label={roommate?.name || 'User'} size="small" />;
+                                                        })) || [];
+
+                                                        const roommate = [...connectedRoommates, ...resolvedPotential].find(r => r._id === id);
+                                                        return <Chip key={id} label={roommate?.name || 'Selected Roommate'} size="small" color="primary" variant="outlined" />;
                                                     })}
                                                 </Box>
                                             )}
                                         >
-                                            {[...connectedRoommates, ...potentialRoommates
-                                                .map(p => ({
+                                            {(() => {
+                                                const resolvedPotential = potentialRoommates?.map(p => ({
                                                     _id: typeof p.userId === 'object' ? (p.userId as any)._id : p.userId,
                                                     name: (p.userId as any).name || 'Roommate'
-                                                }))
-                                                .filter(p => !connectedRoommates.some(c => c._id === p._id))
-                                            ].map((roommate) => (
-                                                <MenuItem key={roommate._id} value={roommate._id}>
-                                                    {roommate.name}
-                                                </MenuItem>
-                                            ))}
+                                                })) || [];
+                                                
+                                                const allAvailable = [...connectedRoommates, ...resolvedPotential];
+                                                
+                                                // Add selected IDs that aren't in the available list
+                                                formData.selectedRoommateIds.forEach(id => {
+                                                    if (!allAvailable.some(a => a._id === id)) {
+                                                        allAvailable.push({ _id: id, name: 'Selected Roommate' });
+                                                    }
+                                                });
+
+                                                return allAvailable.map((roommate) => (
+                                                    <MenuItem key={roommate._id} value={roommate._id}>
+                                                        {roommate.name}
+                                                    </MenuItem>
+                                                ));
+                                            })()}
                                         </Select>
                                         <FormHelperText>
                                             {formData.selectedRoommateIds.length > 0 

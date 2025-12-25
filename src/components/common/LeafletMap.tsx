@@ -11,43 +11,20 @@ import 'leaflet-control-geocoder';
 import type { Property } from '../../service/properties/getProperties.service';
 import React from 'react';
 
-// Fix for Leaflet default icon issues with modern build tools
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+// SVG icons to avoid Tracking Prevention blocking external images
+const createSimpleIcon = (color: string) => {
+  return L.divIcon({
+    html: `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 0C5.596 0 0 5.596 0 12.5C0 21.875 12.5 41 12.5 41C12.5 41 25 21.875 25 12.5C25 5.596 19.404 0 12.5 0ZM12.5 17.5C9.739 17.5 7.5 15.261 7.5 12.5C7.5 9.739 9.739 7.5 12.5 7.5C15.261 7.5 17.5 9.739 17.5 12.5C17.5 15.261 15.261 17.5 12.5 17.5Z" fill="${color}"/></svg>`,
+    className: '',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+  });
+};
 
-// Custom icon for user's selected location
-const userIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// Green marker for property location (read-only)
-const propertyLocationIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// Custom icon for properties
-const propertyIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+const userIcon = createSimpleIcon('#FF5A5F'); // Red
+const propertyLocationIcon = createSimpleIcon('#4CAF50'); // Green
+const propertyIcon = createSimpleIcon('#2196F3'); // Blue
 
 type DraggableMarkerProps = {
   position: [number, number];

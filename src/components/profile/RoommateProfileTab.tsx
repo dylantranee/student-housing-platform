@@ -6,8 +6,6 @@ import {
     Button,
     Paper,
     Stack,
-    Slider,
-    Alert,
     CircularProgress,
     Avatar,
     Radio,
@@ -21,6 +19,7 @@ import {
     ListItemText,
     OutlinedInput,
     Chip,
+    Slider,
 } from '@mui/material';
 import { PhotoCamera, Save, Publish } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -36,6 +35,27 @@ import {
 } from '../../service/roommate/roommateProfile.service';
 import type { RoommateProfile, RoommateProfileCreate, RoommateProfileUpdate } from '../../types/roommateProfile.types';
 import { UPLOADS_BASE_URL } from '../../config/apiConfig';
+import { useNotification } from '../../context/NotificationContext';
+
+const PREDEFINED_UNIVERSITIES = [
+    'Vietnam National University, Ho Chi Minh City',
+    'University of Technology - VNUHCM',
+    'University of Science - VNUHCM',
+    'University of Social Sciences and Humanities - VNUHCM',
+    'University of Economics and Law - VNUHCM',
+    'International University - VNUHCM',
+    'University of Economics Ho Chi Minh City',
+    'RMIT University Vietnam',
+    'British University Vietnam',
+    'FPT University',
+    'Ton Duc Thang University',
+    'Hoa Sen University',
+    'Hanoi University of Science and Technology',
+    'National Economics University',
+    'Foreign Trade University',
+];
+
+import { Autocomplete } from '@mui/material';
 
 interface RoommateProfileTabProps {
     userId: string;
@@ -43,7 +63,7 @@ interface RoommateProfileTabProps {
 
 export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) {
     const queryClient = useQueryClient();
-    const [success, setSuccess] = useState<string>('');
+    const { showAlert } = useNotification();
     const [showOtherUniversity, setShowOtherUniversity] = useState(false);
     const [otherUniversity, setOtherUniversity] = useState('');
     const [photoPreview, setPhotoPreview] = useState<string | undefined>(undefined);
@@ -54,8 +74,8 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
         studyProgram: '',
         university: '',
         moveInDate: null as Dayjs | null,
-        budgetMin: 3000000,
-        budgetMax: 8000000,
+        budgetMin: 0,
+        budgetMax: 10000000, // Large default to avoid filtering issues
         sleepSchedule: '' as 'Early Bird' | 'Night Owl' | 'Flexible' | '',
         cleanliness: 2,
         noiseTolerance: '' as 'Quiet' | 'Moderate' | 'Lively' | '',
@@ -68,7 +88,7 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
         leaseLength: 'Flexible' as '3 months' | '6 months' | '1 year' | 'Flexible',
     });
 
-    const { data: profile, isLoading: loading, error: fetchError } = useQuery({
+    const { data: profile, isLoading: loading } = useQuery({
         queryKey: ['roommate-profile', userId],
         queryFn: () => getRoommateProfile(userId),
         enabled: !!userId,
@@ -82,8 +102,8 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                 studyProgram: profile.studyProgram || '',
                 university: profile.university || '',
                 moveInDate: profile.moveInDate ? dayjs(profile.moveInDate) : null,
-                budgetMin: profile.budgetMin || 3000000,
-                budgetMax: profile.budgetMax || 8000000,
+                budgetMin: profile.budgetMin ?? 0,
+                budgetMax: profile.budgetMax ?? 100000000,
                 sleepSchedule: profile.sleepSchedule || '',
                 cleanliness: profile.cleanliness || 2,
                 noiseTolerance: profile.noiseTolerance || '',
@@ -96,17 +116,9 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                 leaseLength: profile.leaseLength || 'Flexible',
             });
 
-            const predefinedUniversities = [
-                'Vietnam National University, Ho Chi Minh City', 'University of Technology - VNUHCM',
-                'University of Science - VNUHCM', 'University of Social Sciences and Humanities - VNUHCM',
-                'University of Economics and Law - VNUHCM', 'International University - VNUHCM',
-                'University of Economics Ho Chi Minh City',
-                'RMIT University Vietnam', 'British University Vietnam', 'FPT University',
-                'Ton Duc Thang University', 'Hoa Sen University'
-            ];
             
             const customUniversities = (profile.preferredUniversities || []).filter(
-                uni => !predefinedUniversities.includes(uni)
+                uni => !PREDEFINED_UNIVERSITIES.includes(uni)
             );
             
             if (customUniversities.length > 0) {
@@ -164,15 +176,18 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
         },
         onSuccess: (data, variables) => {
             queryClient.setQueryData(['roommate-profile', userId], data);
-            setSuccess(variables.status === 'published' ? 'Roommate profile published!' : 'Draft saved!');
+            showAlert(variables.status === 'published' ? 'Roommate profile published successfully!' : 'Draft saved successfully!', 'success');
         },
+        onError: (err: any) => {
+            showAlert(err.message || 'Failed to save profile. Please try again.', 'error');
+        }
     });
 
     const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                setSuccess(''); // Clear success
+                showAlert('Photo size must be less than 5MB', 'warning');
                 return;
             }
             if (!file.type.startsWith('image/')) {
@@ -190,8 +205,13 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
     const handleSaveDraft = () => saveMutation.mutate({ status: 'draft' });
 
     const handlePublish = () => {
-        if (!formData.bio || !formData.studyProgram || !formData.university || !formData.moveInDate) {
-            setSuccess('');
+        // Validation with feedback - Only University and Move-in Date are strictly required for matching
+        const missingFields = [];
+        if (!formData.university) missingFields.push('University');
+        if (!formData.moveInDate) missingFields.push('Move-in Date');
+
+        if (missingFields.length > 0) {
+            showAlert(`Please complete the required fields: ${missingFields.join(', ')}`, 'warning');
             return;
         }
         saveMutation.mutate({ status: 'published' });
@@ -206,14 +226,10 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
     }
 
     const saving = saveMutation.isPending;
-    const error = (saveMutation.error as any)?.message || (fetchError as any)?.response?.status === 404 ? '' : (fetchError as any)?.message;
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ py: 2 }}>
-                {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-                {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
-
                 <Stack spacing={4}>
                     {/* Simplified Profile Section for Profile Tab */}
                     <Paper elevation={0} sx={{ p: 4, borderRadius: 4, border: '1px solid #f0f0f0' }}>
@@ -252,39 +268,28 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                                     value={formData.studyProgram}
                                     onChange={(e) => setFormData({ ...formData, studyProgram: e.target.value })}
                                 />
-                                <TextField
+                                <Autocomplete
                                     fullWidth
-                                    label="University"
+                                    options={PREDEFINED_UNIVERSITIES}
                                     value={formData.university}
-                                    onChange={(e) => setFormData({ ...formData, university: e.target.value })}
+                                    onChange={(_, newValue) => setFormData({ ...formData, university: newValue || '' })}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="University *"
+                                            placeholder="Select your university"
+                                        />
+                                    )}
+                                    freeSolo
                                 />
                             </Stack>
 
                             <DatePicker
-                                label="Target Move-in Date"
+                                label="Target Move-in Date *"
                                 value={formData.moveInDate}
                                 onChange={(newValue) => setFormData({ ...formData, moveInDate: newValue })}
                                 slotProps={{ textField: { fullWidth: true } }}
                             />
-                            
-                            <Box>
-                                <Typography gutterBottom sx={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                                    Monthly Budget Range (₫)
-                                </Typography>
-                                <Slider
-                                    value={[formData.budgetMin, formData.budgetMax]}
-                                    onChange={(_, newValue) => {
-                                        const [min, max] = newValue as number[];
-                                        setFormData({ ...formData, budgetMin: min, budgetMax: max });
-                                    }}
-                                    valueLabelDisplay="auto"
-                                    min={1000000}
-                                    max={15000000}
-                                    step={500000}
-                                    valueLabelFormat={(value) => `${(value / 1000000).toFixed(1)}M`}
-                                    sx={{ color: '#FF5A5F' }}
-                                />
-                            </Box>
                         </Stack>
                     </Paper>
 
@@ -320,6 +325,24 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                                     <FormControlLabel value="Yes" control={<Radio size="small" />} label="Yes" />
                                 </RadioGroup>
                             </FormControl>
+
+                            <Box sx={{ mt: 2 }}>
+                                <Typography gutterBottom sx={{ fontWeight: 700 }}>
+                                    Monthly Budget (VND): {formData.budgetMin.toLocaleString()} - {formData.budgetMax.toLocaleString()}
+                                </Typography>
+                                <Slider
+                                    value={[formData.budgetMin, formData.budgetMax]}
+                                    onChange={(_, newValue) => {
+                                        const [min, max] = newValue as number[];
+                                        setFormData({ ...formData, budgetMin: min, budgetMax: max });
+                                    }}
+                                    valueLabelDisplay="auto"
+                                    min={0}
+                                    max={10000000}
+                                    step={100000}
+                                    sx={{ color: '#FF5A5F' }}
+                                />
+                            </Box>
                         </Stack>
                     </Paper>
 
@@ -348,10 +371,11 @@ export default function RoommateProfileTab({ userId }: RoommateProfileTabProps) 
                                         </Box>
                                     )}
                                 >
-                                    <MenuItem value="Vietnam National University, Ho Chi Minh City"><ListItemText primary="VNU-HCM" /></MenuItem>
-                                    <MenuItem value="University of Technology - VNUHCM"><ListItemText primary="UT - VNUHCM" /></MenuItem>
-                                    <MenuItem value="RMIT University Vietnam"><ListItemText primary="RMIT Vietnam" /></MenuItem>
-                                    <MenuItem value="FPT University"><ListItemText primary="FPT University" /></MenuItem>
+                                    {PREDEFINED_UNIVERSITIES.map((uni) => (
+                                        <MenuItem key={uni} value={uni}>
+                                            <ListItemText primary={uni} />
+                                        </MenuItem>
+                                    ))}
                                     <MenuItem value="Other"><ListItemText primary="Other" /></MenuItem>
                                 </Select>
                             </FormControl>

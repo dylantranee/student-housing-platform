@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -6,8 +6,11 @@ import {
   CircularProgress,
   Alert,
   Button,
+  ToggleButtonGroup,
+  ToggleButton,
+  Tooltip,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { RoommateCard } from '../components/RoommateCard';
 import { RoommateDetailModal } from '../components/RoommateDetailModal';
@@ -15,22 +18,55 @@ import { browseRoommates } from '../service/browseRoommates.service';
 import type { RoommateProfile } from '../types/roommateProfile.types';
 import Header from '../components/layout/Header';
 import { COLORS } from '../theme/theme';
+import SchoolIcon from '@mui/icons-material/School';
+import NightlifeIcon from '@mui/icons-material/Nightlife';
+import BalanceIcon from '@mui/icons-material/Balance';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 
 export const BrowseRoommatesPage = () => {
   const [selectedProfile, setSelectedProfile] = useState<RoommateProfile | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [strategy, setStrategy] = useState('balanced');
+  const [selectedRoommateIds, setSelectedRoommateIds] = useState<string[]>([]);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const fromProperty = searchParams.get('fromProperty');
+  const propertyTitle = searchParams.get('propertyTitle');
 
-  const { data: profiles = [], isLoading, error: queryError } = useQuery({
-    queryKey: ['roommates'],
-    queryFn: browseRoommates,
+  const { data, isLoading, error: queryError } = useQuery({
+    queryKey: ['roommates', strategy],
+    queryFn: ({ queryKey }) => browseRoommates(queryKey[1] as string),
   });
+
+  useEffect(() => {
+    const saved = localStorage.getItem('last_selected_roommate_ids');
+    if (saved) {
+      try {
+        setSelectedRoommateIds(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse saved roommate selections', e);
+      }
+    }
+  }, []);
+
+  const profiles = data?.profiles || [];
+  const requiresProfile = data?.requiresProfile || false;
+  const serverMessage = data?.message;
 
   const errorMessage = queryError instanceof Error ? queryError.message : 
                  (queryError as any)?.response?.data?.message || 
+                 serverMessage ||
                  'Failed to load roommate profiles. Please try again.';
   
-  const requiresProfile = errorMessage.includes('create your roommate profile');
+  const handleStrategyChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newStrategy: string | null,
+  ) => {
+    if (newStrategy !== null && typeof newStrategy === 'string') {
+      setStrategy(newStrategy);
+    }
+  };
 
   const filteredProfiles = profiles
     .filter(p => (p.matchScore || 0) >= 40)
@@ -42,6 +78,19 @@ export const BrowseRoommatesPage = () => {
       setSelectedProfile(profile);
       setShowDetailModal(true);
     }
+  };
+
+  const toggleRoommateSelection = (profile: RoommateProfile) => {
+    const userId = typeof profile.userId === 'object' ? (profile.userId as any)._id : profile.userId;
+    if (!userId) return;
+
+    setSelectedRoommateIds(prev => {
+        const next = prev.includes(userId) 
+            ? prev.filter(id => id !== userId) 
+            : [...prev, userId];
+        localStorage.setItem('last_selected_roommate_ids', JSON.stringify(next));
+        return next;
+    });
   };
 
   const handleCreateProfile = () => {
@@ -61,6 +110,22 @@ export const BrowseRoommatesPage = () => {
         borderBottom: '1px solid rgba(255, 90, 95, 0.05)'
       }}>
         <Container maxWidth="md">
+          {fromProperty && (
+            <Button
+              startIcon={<ArrowBackIosNewIcon sx={{ fontSize: 14 }} />}
+              onClick={() => navigate(`/property/${fromProperty}`)}
+              sx={{
+                mb: 3,
+                textTransform: 'none',
+                color: COLORS.primary,
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+              }}
+            >
+              Back to {propertyTitle || 'Property'}
+            </Button>
+          )}
           <Typography 
             variant="h2" 
             sx={{ 
@@ -114,13 +179,81 @@ export const BrowseRoommatesPage = () => {
 
         {/* Results Metadata Section */}
         {!isLoading && filteredProfiles.length > 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 6 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between', 
+            alignItems: { xs: 'flex-start', md: 'center' }, 
+            mb: 6,
+            gap: 3
+          }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Typography variant="h5" sx={{ fontWeight: 800, color: '#222' }}>
                 Hand-picked for you
               </Typography>
               <Box sx={{ height: 2, width: 40, bgcolor: COLORS.primary }} />
             </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#222', mr: 1 }}>
+                Match by:
+              </Typography>
+              <ToggleButtonGroup
+                value={strategy}
+                exclusive
+                onChange={handleStrategyChange}
+                size="small"
+                sx={{
+                  bgcolor: '#f8f9fa',
+                  p: 0.5,
+                  borderRadius: 3,
+                  '& .MuiToggleButton-root': {
+                    border: 'none',
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    color: '#717171',
+                    gap: 1,
+                    '&.Mui-selected': {
+                      bgcolor: '#fff',
+                      color: COLORS.primary,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                      '&:hover': {
+                        bgcolor: '#fff',
+                      }
+                    }
+                  }
+                }}
+              >
+                <ToggleButton value="balanced">
+                  <Tooltip title="Equal weight to all factors">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <BalanceIcon sx={{ fontSize: 18 }} />
+                      Balanced
+                    </Box>
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="university">
+                  <Tooltip title="Prioritize same school background">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <SchoolIcon sx={{ fontSize: 18 }} />
+                      University
+                    </Box>
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="lifestyle">
+                  <Tooltip title="Prioritize habits and daily vibe">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <NightlifeIcon sx={{ fontSize: 18 }} />
+                      Lifestyle
+                    </Box>
+                  </Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+
             <Typography variant="body2" sx={{ color: '#717171', fontStyle: 'italic' }}>
               Showing only students with &gt;40% vibe compatibility.
             </Typography>
@@ -190,6 +323,8 @@ export const BrowseRoommatesPage = () => {
                 <RoommateCard
                   profile={profile}
                   onViewDetails={handleViewDetails}
+                  selected={selectedRoommateIds.includes(typeof profile.userId === 'object' ? (profile.userId as any)._id : profile.userId)}
+                  onToggleSelect={() => toggleRoommateSelection(profile)}
                 />
               </Box>
             ))}
@@ -201,6 +336,8 @@ export const BrowseRoommatesPage = () => {
         profile={selectedProfile}
         open={showDetailModal}
         onClose={() => setShowDetailModal(false)}
+        isSelected={selectedProfile ? selectedRoommateIds.includes(typeof selectedProfile.userId === 'object' ? (selectedProfile.userId as any)._id : selectedProfile.userId) : false}
+        onToggleSelect={selectedProfile ? (() => toggleRoommateSelection(selectedProfile)) : undefined}
       />
       </Container>
     </Box>

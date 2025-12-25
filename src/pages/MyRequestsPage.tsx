@@ -318,6 +318,16 @@ const MyRequestsPage: React.FC = () => {
                   Group Members:
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {/* Initiator (Tenant) */}
+                  <Chip
+                    label={inquiry.tenantName}
+                    size="small"
+                    variant="filled"
+                    color="info"
+                    icon={<Check sx={{ fontSize: '14px !important' }} />}
+                    sx={{ fontWeight: 600, height: 24 }}
+                  />
+                  {/* Invited Roommates */}
                   {inquiry.linkedRoommates.map((rm, idx) => (
                     <Chip
                       key={idx}

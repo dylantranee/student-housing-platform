@@ -1,7 +1,6 @@
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiConfig";
+import { request } from "../../util/request";
 
-const API_URL = `${API_BASE_URL}/houseDetail`;
+const API_URL = "/api/houseDetail";
 
 export interface Property {
   area: any;
@@ -18,11 +17,5 @@ export interface Property {
 }
 
 export const getProperties = async (): Promise<Property[]> => {
-  try {
-    const response = await axios.get(API_URL);
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching properties:", error);
-    throw error;
-  }
+  return request<Property[]>(API_URL);
 };

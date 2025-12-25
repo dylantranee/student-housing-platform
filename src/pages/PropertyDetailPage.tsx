@@ -77,14 +77,15 @@ export default function PropertyDetailPage() {
 
     const { data: allRoommates } = useQuery({
         queryKey: ['roommates'],
-        queryFn: browseRoommates,
+        queryFn: () => browseRoommates(),
         enabled: !!property,
     });
 
     const potentialRoommates = useMemo(() => {
         if (!property || !allRoommates) return [];
+        const roommates = allRoommates.profiles || [];
         const propertyPrice = property.price || 0;
-        return allRoommates
+        return roommates
             .filter(r => (r.matchScore || 0) >= 40)
             .filter(r => (r.budgetMax || 0) >= (propertyPrice * 0.4))
             .slice(0, 6);
@@ -441,7 +442,7 @@ export default function PropertyDetailPage() {
                                 {potentialRoommates.length > 0 && (
                                     <Button 
                                         fullWidth 
-                                        onClick={() => navigate('/roommates/browse')}
+                                        onClick={() => navigate(`/roommates/browse?fromProperty=${id}&propertyTitle=${encodeURIComponent(property.title)}`)}
                                         sx={{ 
                                             mt: 2, 
                                             textTransform: 'none', 

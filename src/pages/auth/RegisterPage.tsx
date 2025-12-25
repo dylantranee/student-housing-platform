@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserLoginService } from '../../service/user/auth/user.login.service';
-import { API_BASE_URL } from '../../config/apiConfig';
+import { request } from '../../util/request';
 import { Card, Box, Typography, TextField, Button, InputAdornment, Alert, Snackbar, IconButton } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
@@ -54,24 +54,10 @@ export default function RegisterPage() {
     if (!validate()) return;
     
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+      await request({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, age: Number(age), phone, email, password })
-      });
-      const result = await res.json();
-      
-      if (!res.ok) {
-        if (result?.error?.toLowerCase().includes('phone')) {
-          setError('Phone number is already registered');
-        } else if (result?.error?.toLowerCase().includes('email')) {
-          setError('Email address is already registered');
-        } else {
-          setError('Registration failed. Please try again.');
-        }
-        setOpenSnackbar(true);
-        return;
-      }
+        url: '/api/auth/register',
+      }, { name, age: Number(age), phone, email, password });
       
       setOpenSnackbar(true);
       setFieldErrors({});
@@ -90,8 +76,14 @@ export default function RegisterPage() {
       setTimeout(() => {
         navigate('/');
       }, 1500);
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+    } catch (err: any) {
+      if (err.message?.toLowerCase().includes('phone')) {
+        setError('Phone number is already registered');
+      } else if (err.message?.toLowerCase().includes('email')) {
+        setError('Email address is already registered');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
       setOpenSnackbar(true);
     }
   };
@@ -450,7 +442,7 @@ export default function RegisterPage() {
             }}
             onClose={() => setOpenSnackbar(false)}
           >
-            {error ? error : '🎉 Account created! Redirecting...'}
+            {error ? error : 'Account created! Redirecting...'}
           </Alert>
         </Snackbar>
       </Card>

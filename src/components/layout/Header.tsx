@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Snackbar, Alert, Container, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { PersonOutline as PersonOutlineIcon, Home as HomeIcon, AddHome as AddHomeIcon, CompareArrows as CompareIcon, Close as CloseIcon, CompareArrows as CompareArrowsIcon } from '@mui/icons-material';
+import { PersonOutline as PersonOutlineIcon, Home as HomeIcon, AddHome as AddHomeIcon, Close as CloseIcon, CompareArrows as CompareArrowsIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import NotificationCenter from './NotificationCenter';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -123,13 +124,7 @@ export default function Header() {
                         >
                             Requests
                         </Button>
-                        {/* <Button 
-                            startIcon={<PersonOutlineIcon />}
-                            sx={{ color: '#222', textTransform: 'none', fontWeight: 600, px: 2, borderRadius: 50, '&:hover': { bgcolor: '#f7f7f7' } }}
-                            onClick={() => navigate('/profile')}
-                        >
-                            Profile
-                        </Button> */}
+                        <NotificationCenter />
                         <Button 
                             sx={{ color: 'text.secondary', textTransform: 'none', fontWeight: 600, px: 2, borderRadius: 50, '&:hover': { bgcolor: '#f7f7f7' } }}
                             onClick={handleLogout}
@@ -252,7 +247,7 @@ export default function Header() {
             }}
           >
             <ListItemIcon sx={{ minWidth: 40 }}>
-              <CompareIcon sx={{ color: '#FF5A5F' }} />
+              <CompareArrowsIcon sx={{ color: '#FF5A5F' }} />
             </ListItemIcon>
             <ListItemText 
               primary="Compare Prices" 

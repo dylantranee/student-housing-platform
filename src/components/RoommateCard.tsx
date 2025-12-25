@@ -161,15 +161,40 @@ export const RoommateCard: React.FC<RoommateCardProps> = ({
         position: 'relative',
         borderRadius: 6,
         border: '1px solid rgba(0,0,0,0.04)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+        boxShadow: selected ? '0 24px 48px rgba(255, 90, 95, 0.15)' : '0 4px 12px rgba(0,0,0,0.03)',
+        transform: selected ? 'translateY(-12px)' : 'none',
         transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         '&:hover': {
           boxShadow: '0 24px 48px rgba(255, 90, 95, 0.12)',
           transform: 'translateY(-12px)',
-          borderColor: 'rgba(255, 90, 95, 0.2)'
-        }
+          borderColor: '#FF5A5F'
+        },
+        ...(selected && {
+          borderColor: '#FF5A5F',
+          borderWidth: '2px'
+        })
       }}
     >
+      {selected && (
+        <Box sx={{ 
+          position: 'absolute', 
+          top: 16, 
+          right: 16, 
+          zIndex: 10,
+          bgcolor: '#FF5A5F',
+          borderRadius: '50%',
+          width: 24,
+          height: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          boxShadow: '0 4px 12px rgba(255, 90, 95, 0.4)',
+          border: '2px solid white'
+        }}>
+          <AutoAwesome sx={{ fontSize: 16 }} />
+        </Box>
+      )}
       {/* Decorative Card Header */}
       <Box sx={{ 
         height: 100, 
