@@ -33,8 +33,8 @@ export default function RegisterPage() {
     } else if (!/^[A-Za-zÀ-ỹ\s]+$/.test(cleanedName)) {
       errors.name = 'Full name must only contain letters and spaces';
     }
-    if (!age || isNaN(Number(age)) || Number(age) < 18 || Number(age) > 120) {
-      errors.age = 'Age must be at least 18';
+    if (!age || isNaN(Number(age)) || !Number.isInteger(Number(age)) || Number(age) < 18 || Number(age) > 120) {
+      errors.age = 'Age must be a whole number between 18 and 120';
     }
     if (!cleanedPhone.match(/^\d{10}$/)) {
       errors.phone = 'Phone must be exactly 10 digits';

@@ -4,18 +4,24 @@ const User = require("../../users/models/user.model");
 const { z } = require("zod");
 
 const registerSchema = z.object({
-  name: z.string()
+  name: z
+    .string()
     .trim()
     .min(1, "Full name is required")
-    .regex(/^[A-Za-zÀ-ỹ\s]+$/, "Full name must only contain letters and spaces"),
-  age: z.number().int().min(18, "Age must be at least 18").max(120, "Age must be at most 120"),
-  phone: z.string()
+    .regex(
+      /^[A-Za-zÀ-ỹ\s]+$/,
+      "Full name must only contain letters and spaces",
+    ),
+  age: z
+    .number()
+    .int()
+    .min(18, "Age must be at least 18")
+    .max(120, "Age must be at most 120"),
+  phone: z
+    .string()
     .trim()
     .regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
-  email: z.string()
-    .trim()
-    .toLowerCase()
-    .email("Invalid email address"),
+  email: z.string().trim().toLowerCase().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -24,7 +30,7 @@ exports.register = async (req, res) => {
   if (!validation.success) {
     return res.status(400).json({
       error: "Validation failed",
-      details: validation.error.errors.map((err) => ({
+      details: validation.error.issues.map((err) => ({
         field: err.path[0],
         message: err.message,
       })),
