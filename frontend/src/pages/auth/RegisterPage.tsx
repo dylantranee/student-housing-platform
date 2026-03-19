@@ -26,20 +26,20 @@ export default function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<any>({});
   const navigate = useNavigate();
 
-  const validate = () => {
+  const validate = (cleanedName: string, cleanedPhone: string, cleanedEmail: string) => {
     const errors: any = {};
-    if (!name.trim()) {
+    if (!cleanedName) {
       errors.name = 'Full name is required';
-    } else if (!/^[A-Za-zÀ-ỹ\s]+$/.test(name.trim())) {
+    } else if (!/^[A-Za-zÀ-ỹ\s]+$/.test(cleanedName)) {
       errors.name = 'Full name must only contain letters and spaces';
     }
     if (!age || isNaN(Number(age)) || Number(age) < 18 || Number(age) > 120) {
       errors.age = 'Age must be at least 18';
     }
-    if (!phone.match(/^\d{10}$/)) {
+    if (!cleanedPhone.match(/^\d{10}$/)) {
       errors.phone = 'Phone must be exactly 10 digits';
     }
-    if (!email.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)) {
+    if (!cleanedEmail.match(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)) {
       errors.email = 'Invalid email address';
     }
     if (!password || password.length < 8) {
@@ -51,13 +51,22 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    
+    const cleanName = name.trim();
+    const cleanPhone = phone.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    
+    setName(cleanName);
+    setPhone(cleanPhone);
+    setEmail(cleanEmail);
+
+    if (!validate(cleanName, cleanPhone, cleanEmail)) return;
     
     try {
       await request({
         method: 'POST',
         url: '/api/auth/register',
-      }, { name, age: Number(age), phone, email, password });
+      }, { name: cleanName, age: Number(age), phone: cleanPhone, email: cleanEmail, password });
       
       setOpenSnackbar(true);
       setFieldErrors({});

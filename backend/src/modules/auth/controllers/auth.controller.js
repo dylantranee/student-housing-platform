@@ -9,8 +9,13 @@ const registerSchema = z.object({
     .min(1, "Full name is required")
     .regex(/^[A-Za-zÀ-ỹ\s]+$/, "Full name must only contain letters and spaces"),
   age: z.number().int().min(18, "Age must be at least 18").max(120, "Age must be at most 120"),
-  phone: z.string().regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
-  email: z.string().email("Invalid email address"),
+  phone: z.string()
+    .trim()
+    .regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
+  email: z.string()
+    .trim()
+    .toLowerCase()
+    .email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
