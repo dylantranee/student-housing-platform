@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const propertyInquiryController = require('../controllers/propertyInquiry.controller');
-const auth = require("../../../../middleware/auth");
+const auth = require("../../common/middleware/auth");
 
 router.use(auth);
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const houseDetailController = require('../controllers/houseDetail.controller');
-const upload = require("../../../../middleware/upload");
+const upload = require("../../common/middleware/upload");
 
 router.post('/', upload.single('image'), houseDetailController.addHouseDetail);
 router.patch('/:id', upload.single('image'), houseDetailController.updateHouseDetail);
