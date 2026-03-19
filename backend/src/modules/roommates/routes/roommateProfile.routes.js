@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const roommateProfileController = require('../controllers/roommateProfile.controller');
-const auth = require("../../common/middleware/auth");
-const upload = require("../../common/middleware/upload");
+const auth = require("../../../common/middleware/auth");
+const upload = require("../../../common/middleware/upload");
 
 router.get('/browse', auth, roommateProfileController.browseRoommates);
 router.post('/', auth, roommateProfileController.createProfile);

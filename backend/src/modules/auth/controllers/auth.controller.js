@@ -1,15 +1,37 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../../users/models/user.model");
+const { z } = require("zod");
+
+const registerSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, "Full name is required")
+    .regex(/^[A-Za-zÀ-ỹ\s]+$/, "Full name must only contain letters and spaces"),
+  age: z.number().int().min(18, "Age must be at least 18").max(120, "Age must be at most 120"),
+  phone: z.string().regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 exports.register = async (req, res) => {
-  const { name, age, phone, email, password } = req.body;
-  if (!name || !age || !phone || !email || !password) {
-    return res.status(400).json({ error: "All fields are required" });
+  const validation = registerSchema.safeParse(req.body);
+  if (!validation.success) {
+    return res.status(400).json({
+      error: "Validation failed",
+      details: validation.error.errors.map((err) => ({
+        field: err.path[0],
+        message: err.message,
+      })),
+    });
   }
+
+  const { name, age, phone, email, password } = validation.data;
+
   try {
     const existing = await User.findOne({ email });
-    if (existing) return res.status(409).json({ error: "Email already exists" });
+    if (existing)
+      return res.status(409).json({ error: "Email already exists" });
     const hashed = await bcrypt.hash(password, 10);
     const user = new User({ name, age, phone, email, password: hashed });
     await user.save();
@@ -32,8 +54,9 @@ exports.login = async (req, res) => {
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
     const accessToken = jwt.sign(
       { id: user._id, name: user.name, email: user.email, roles: user.roles },
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
-      { expiresIn: "1h" }
+      process.env.JWT_SECRET ||
+        "your-super-secret-jwt-key-change-in-production",
+      { expiresIn: "1h" },
     );
     res.json({
       data: {
@@ -42,9 +65,9 @@ exports.login = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
-          roles: user.roles
-        }
-      }
+          roles: user.roles,
+        },
+      },
     });
   } catch (error) {
     console.error("Error logging in:", error);
@@ -56,12 +79,12 @@ exports.profile = (req, res) => {
   const userId = req.user.id;
   if (!userId) return res.status(400).json({ error: "Invalid token" });
   User.findById(userId)
-    .select('-password')
-    .then(user => {
+    .select("-password")
+    .then((user) => {
       if (!user) return res.status(404).json({ error: "User not found" });
       res.json({ data: user });
     })
-    .catch(err => {
+    .catch((err) => {
       console.error("Error fetching profile:", err);
       res.status(500).json({ error: "Server error" });
     });
@@ -81,7 +104,7 @@ exports.updateProfile = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { $set: update },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     ).select("-password");
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json({ data: user });

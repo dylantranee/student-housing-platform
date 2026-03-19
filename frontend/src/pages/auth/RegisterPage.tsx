@@ -77,9 +77,22 @@ export default function RegisterPage() {
         navigate('/');
       }, 1500);
     } catch (err: any) {
-      if (err.message?.toLowerCase().includes('phone')) {
+      // Check for backend Zod validation errors (assuming axios-like response)
+      if (err.response?.data?.details) {
+        const backendErrors: any = {};
+        err.response.data.details.forEach((d: any) => {
+          backendErrors[d.field] = d.message;
+        });
+        setFieldErrors({ ...fieldErrors, ...backendErrors });
+        setError('Validation failed. Please fix the highlighted fields.');
+        setOpenSnackbar(true);
+        return;
+      }
+
+      const errMsg = err.response?.data?.error || err.message || '';
+      if (errMsg.toLowerCase().includes('phone')) {
         setError('Phone number is already registered');
-      } else if (err.message?.toLowerCase().includes('email')) {
+      } else if (errMsg.toLowerCase().includes('email')) {
         setError('Email address is already registered');
       } else {
         setError('Registration failed. Please try again.');

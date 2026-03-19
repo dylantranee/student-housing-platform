@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const matchRequestController = require('../controllers/matchRequest.controller');
-const auth = require("../../common/middleware/auth");
+const auth = require("../../../common/middleware/auth");
 
 router.use(auth);
 router.post('/', matchRequestController.sendRequest);
