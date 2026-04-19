@@ -120,9 +120,6 @@ exports.updateProfile = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json({ data: user });
   } catch (error) {
-    if (error.code === 11000 && error.keyPattern && error.keyPattern.phone) {
-      return res.status(409).json({ error: "Phone number already exists" });
-    }
     console.error("Error updating profile:", error);
     res.status(500).json({ error: "Server error" });
   }
